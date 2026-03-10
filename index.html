@@ -121,8 +121,17 @@
             align-items: center;
             gap: 8px;
             flex-shrink: 0;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
         .filesize {
+            font-size: 0.75rem;
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .new-badge {
             font-size: 0.75rem;
             color: #22c55e;
             background: rgba(34, 197, 94, 0.1);
@@ -310,12 +319,14 @@
                         const href = link.getAttribute('href');
                         const fullUrl = new URL(href, TARGET_URL).href;
                         const title = elem.textContent.replace('DOWNLOAD', '').replace('ElAmigos', '').trim();
+                        const isNew = elem.tagName === 'H5';
                         
                         if (!dateSections[currentDate].some(l => l.url === fullUrl)) {
                             dateSections[currentDate].push({
                                 url: fullUrl,
                                 h2: title,
-                                date: currentDate
+                                date: currentDate,
+                                isNew: isNew
                             });
                         }
                     }
@@ -438,6 +449,7 @@
             if (!card) return;
             
             const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
+            const newBadge = link.isNew ? `<span class="new-badge">New</span>` : '';
             const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
             const deepLinksHtml = hasDeepLinks ? `
                 <div class="collapse-content">
@@ -449,7 +461,7 @@
             ` : '';
             
             const meta = card.querySelector('.card-meta');
-            if (meta) meta.innerHTML = filesize;
+            if (meta) meta.innerHTML = newBadge + filesize;
             
             const existingCollapse = card.querySelector('.collapse-content');
             if (existingCollapse) {
@@ -491,6 +503,7 @@
                     const h3 = link.h3 ? `<h3>${escapeHtml(link.h3)}</h3>` : '';
                     
                     const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
+                    const newBadge = link.isNew ? `<span class="new-badge">New</span>` : '';
                     const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
                     const deepLinksHtml = hasDeepLinks ? `
                         <div class="collapse-content">
@@ -509,6 +522,7 @@
                                     ${h3}
                                 </div>
                                 <div class="card-meta">
+                                    ${newBadge}
                                     ${filesize}
                                 </div>
                             </div>
