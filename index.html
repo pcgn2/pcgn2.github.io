@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>PC Games News</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #e5e5e5;
+            --text-dim: #888;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.025em;
+        }
+        .search-box {
+            display: none;
+        }
+        input {
+            flex: 1;
+            padding: 14px 18px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--accent); }
+        input::placeholder { color: var(--text-dim); }
+        button {
+            padding: 14px 28px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        button:hover { background: var(--accent-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .card {
+            display: block;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.2s;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .card:hover { border-color: #3a3a3a; }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .card h2 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .card h3 {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .filesize {
+            font-size: 0.75rem;
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .collapse-content {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.3s ease;
+        }
+        .card.open .collapse-content {
+            grid-template-rows: 1fr;
+        }
+        .collapse-inner {
+            overflow: hidden;
+            padding-top: 0;
+            border-top: none;
+            transition: padding-top 0.3s ease, border-top 0.3s ease;
+        }
+        .card.open .collapse-inner {
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+        .collapse-content a {
+            display: block;
+            color: var(--accent);
+            font-size: 0.85rem;
+            padding: 6px 0;
+            text-decoration: none;
+        }
+        .collapse-content a:hover { text-decoration: underline; }
+        .collapse-content .main-link {
+            color: #f97316;
+            font-weight: 500;
+        }
+        .date-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            padding: 16px 0 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+        .date-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .empty {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 60px 20px;
+            font-size: 0.9rem;
+        }
+        .empty-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PC Games News</h1>
+        
+        <div class="status">
+            <span class="status-dot"></span>
+            <span id="statusText">Loading...</span>
+        </div>
+        
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        const PASSWORD = '1337';
+        const COOKIE_NAME = 'pcgames_auth';
+        const COOKIE_DAYS = 180;
+        
+        function setCookie(name, value, days) {
+            const expires = new Date(Date.now() + days * 864e5).toUTCString();
+            document.cookie = name + '=' + value + '; expires=' + expires + '; path=/';
+        }
+        
+        function getCookie(name) {
+            return document.cookie.match('(^|; )' + name + '=([^;]*)')?.[2];
+        }
+        
+        if (getCookie(COOKIE_NAME) !== PASSWORD) {
+            document.body.innerHTML = `
+                <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f0f0f;color:#e5e5e5;font-family:system-ui;">
+                    <div style="text-align:center;">
+                        <h1 style="margin-bottom:20px;">PC Games News</h1>
+                        <input type="password" id="pass" placeholder="Enter password" autofocus 
+                            onkeydown="if(event.key==='Enter')document.getElementById('loginBtn').click()"
+                            style="padding:12px;border-radius:6px;border:1px solid #333;background:#1a1a1a;color:#fff;margin-bottom:10px;">
+                        <br>
+                        <button id="loginBtn" onclick="
+                            if(document.getElementById('pass').value===PASSWORD){
+                                setCookie(COOKIE_NAME,document.getElementById('pass').value,${COOKIE_DAYS});
+                                location.reload();
+                            }else{alert('Wrong password');}
+                        " style="padding:12px 24px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;">Enter</button>
+                    </div>
+                </div>
+            `;
+        } else {
+        
+        const TARGET_URL = 'https://elamigos.site';
+        const CORS_PROXY = 'https://cors.eu.org/';
+        const CACHE_KEY = 'pcgames_deepcache';
+        const CACHE_DAYS = 90;
+        
+        let lastUpdated = null;
+        let cachedData = null;
+        const statusText = document.getElementById('statusText');
+        const results = document.getElementById('results');
+
+        function saveDeepCache(deepData) {
+            try {
+                const existing = loadDeepCache();
+                const merged = { ...existing, ...deepData };
+                const cacheData = {
+                    data: merged,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            } catch (e) {
+                console.error('Cache save error:', e);
+            }
+        }
+
+        function loadDeepCache() {
+            try {
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (cached) {
+                    const cacheData = JSON.parse(cached);
+                    const age = Date.now() - cacheData.timestamp;
+                    const maxAge = CACHE_DAYS * 24 * 60 * 60 * 1000;
+                    if (age < maxAge) {
+                        return cacheData.data;
+                    }
+                }
+            } catch (e) {
+                console.error('Cache load error:', e);
+            }
+            return {};
+        }
+
+        const DATE_PATTERN = /(\d{2})\.(\d{2})\.(\d{4})/;
+        const DEEP_CRAWL_LIMIT = 999;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function parseDate(str) {
+            const match = DATE_PATTERN.exec(str);
+            if (match) {
+                return `${match[1]}.${match[2]}.${match[3]}`;
+            }
+            return '';
+        }
+
+        function crawlWebsite(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            const dateSections = {};
+            let currentDate = null;
+            
+            const allElements = doc.querySelectorAll('h1, h3, h5');
+            allElements.forEach(elem => {
+                if (elem.tagName === 'H1') {
+                    const text = elem.textContent.trim();
+                    const dateMatch = DATE_PATTERN.exec(text);
+                    if (dateMatch) {
+                        currentDate = `${dateMatch[1]}.${dateMatch[2]}.${dateMatch[3]}`;
+                        dateSections[currentDate] = [];
+                    }
+                } else if ((elem.tagName === 'H3' || elem.tagName === 'H5') && currentDate) {
+                    const link = elem.querySelector('a[href$=".html"]');
+                    if (link) {
+                        const href = link.getAttribute('href');
+                        const fullUrl = new URL(href, TARGET_URL).href;
+                        const title = elem.textContent.replace('DOWNLOAD', '').replace('ElAmigos', '').trim();
+                        
+                        if (!dateSections[currentDate].some(l => l.url === fullUrl)) {
+                            dateSections[currentDate].push({
+                                url: fullUrl,
+                                h2: title,
+                                date: currentDate
+                            });
+                        }
+                    }
+                }
+            });
+            
+            let links = [];
+            const sortedDates = Object.keys(dateSections).sort((a, b) => {
+                const [d1, m1, y1] = a.split('.').map(Number);
+                const [d2, m2, y2] = b.split('.').map(Number);
+                return new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1);
+            });
+            
+            for (const date of sortedDates) {
+                links = links.concat(dateSections[date]);
+            }
+            
+            return links.slice(0, 200);
+        }
+
+        async function deepCrawlLink(url) {
+            try {
+                const response = await fetch(CORS_PROXY + url);
+                if (!response.ok) return { filesize: null, links: [] };
+                
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const bodyText = doc.body ? doc.body.textContent : '';
+                const sizeMatch = bodyText.match(/(\d+(?:\.\d+)?)\s*(GB|MB)/i);
+                const filesize = sizeMatch ? `${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}` : null;
+                
+                let rapidgatorLink = null;
+                const allElements = doc.body ? Array.from(doc.body.querySelectorAll('*')) : [];
+                for (let i = 0; i < allElements.length; i++) {
+                    const elem = allElements[i];
+                    if (elem.textContent.includes('RAPIDGATOR')) {
+                        let sibling = elem.nextElementSibling;
+                        while (sibling) {
+                            const link = sibling.querySelector ? sibling.querySelector('a[href$=".html"]') : null;
+                            if (link) {
+                                const href = link.getAttribute('href');
+                                rapidgatorLink = new URL(href, TARGET_URL).href;
+                                break;
+                            }
+                            if (sibling.textContent.includes('RAPIDGATOR')) break;
+                            sibling = sibling.nextElementSibling;
+                        }
+                        if (rapidgatorLink) break;
+                    }
+                }
+                
+                return { filesize, links: rapidgatorLink ? [rapidgatorLink] : [] };
+            } catch (error) {
+                console.error('Deep crawl error:', error);
+                return { filesize: null, links: [] };
+            }
+        }
+
+        async function fetchAndCrawl() {
+            const cachedDeep = loadDeepCache();
+            
+            try {
+                statusText.textContent = 'Crawling...';
+                
+                const response = await fetch(CORS_PROXY + TARGET_URL);
+                if (!response.ok) throw new Error('Failed to fetch');
+                
+                const html = await response.text();
+                let links = crawlWebsite(html);
+                
+                const deepCacheToSave = {};
+                const linksToDeepCrawl = links;
+                const totalToCrawl = linksToDeepCrawl.length;
+                
+                lastUpdated = new Date();
+                cachedData = links;
+                renderLinks(links);
+                
+                for (let i = 0; i < linksToDeepCrawl.length; i++) {
+                    const url = linksToDeepCrawl[i].url;
+                    if (cachedDeep[url]) {
+                        linksToDeepCrawl[i].filesize = cachedDeep[url].filesize;
+                        linksToDeepCrawl[i].deepLinks = cachedDeep[url].deepLinks;
+                        updateCard(linksToDeepCrawl[i]);
+                    } else {
+                        statusText.textContent = `Deep crawling ${i + 1}/${totalToCrawl}...`;
+                        const result = await deepCrawlLink(url);
+                        linksToDeepCrawl[i].filesize = result.filesize;
+                        linksToDeepCrawl[i].deepLinks = result.links;
+                        deepCacheToSave[url] = { filesize: result.filesize, deepLinks: result.links };
+                        updateCard(linksToDeepCrawl[i]);
+                    }
+                }
+                
+                if (Object.keys(deepCacheToSave).length > 0) {
+                    saveDeepCache(deepCacheToSave);
+                }
+                
+                updateStatus();
+            } catch (error) {
+                console.error('Crawl error:', error);
+                statusText.textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function updateStatus() {
+            if (lastUpdated) {
+                const diff = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+                const minutes = diff < 1 ? 'less than 1' : diff;
+                statusText.textContent = `Last updated ${minutes}m ago`;
+            } else {
+                statusText.textContent = 'No data';
+            }
+        }
+
+        function updateCard(link) {
+            const card = document.querySelector(`[data-url="${CSS.escape(link.url)}"]`);
+            if (!card) return;
+            
+            const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
+            const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
+            const deepLinksHtml = hasDeepLinks ? `
+                <div class="collapse-content">
+                    <div class="collapse-inner">
+                        <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Open Source Page →</a>
+                        ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Open Target Page →</a>`).join('')}
+                    </div>
+                </div>
+            ` : '';
+            
+            const meta = card.querySelector('.card-meta');
+            if (meta) meta.innerHTML = filesize;
+            
+            const existingCollapse = card.querySelector('.collapse-content');
+            if (existingCollapse) {
+                existingCollapse.remove();
+            }
+            if (deepLinksHtml) {
+                card.insertAdjacentHTML('beforeend', deepLinksHtml);
+            }
+        }
+
+        function renderLinks(links) {
+            if (!links || links.length === 0) {
+                results.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">🔍</div>
+                        No .html links found
+                    </div>
+                `;
+                return;
+            }
+
+            const groupedByDate = {};
+            links.forEach(link => {
+                const date = link.date || 'Unknown';
+                if (!groupedByDate[date]) groupedByDate[date] = [];
+                groupedByDate[date].push(link);
+            });
+
+            const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+                const [d1, m1, y1] = a.split('.').map(Number);
+                const [d2, m2, y2] = b.split('.').map(Number);
+                return new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1);
+            });
+
+            results.innerHTML = sortedDates.map(date => {
+                const dateLabel = `<div class="date-header">${escapeHtml(date)}</div>`;
+                const cards = groupedByDate[date].map((link, idx) => {
+                    const h2 = link.h2 ? `<h2>${escapeHtml(link.h2)}</h2>` : '';
+                    const h3 = link.h3 ? `<h3>${escapeHtml(link.h3)}</h3>` : '';
+                    
+                    const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
+                    const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
+                    const deepLinksHtml = hasDeepLinks ? `
+                        <div class="collapse-content">
+                            <div class="collapse-inner">
+                                <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Open Source Page →</a>
+                                ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Open Target Page →</a>`).join('')}
+                            </div>
+                        </div>
+                    ` : '';
+                    
+                    return `
+                        <div class="card" data-url="${escapeHtml(link.url)}" onclick="toggleCard(this)">
+                            <div class="card-header">
+                                <div>
+                                    ${h2}
+                                    ${h3}
+                                </div>
+                                <div class="card-meta">
+                                    ${filesize}
+                                </div>
+                            </div>
+                            ${deepLinksHtml}
+                        </div>
+                    `;
+                }).join('');
+                
+                return `<div class="date-group">${dateLabel}${cards}</div>`;
+            }).join('');
+        }
+
+        function toggleCard(card) {
+            const isOpen = card.classList.contains('open');
+            document.querySelectorAll('.card.open').forEach(c => c.classList.remove('open'));
+            if (!isOpen) card.classList.add('open');
+        }
+
+        // Initial load
+        fetchAndCrawl();
+        
+        // Auto-refresh every 15 minutes
+        setInterval(fetchAndCrawl, 900000);
+        
+        // Update time display every minute
+        setInterval(updateStatus, 60000);
+        }
+    </script>
+</body>
+</html>
