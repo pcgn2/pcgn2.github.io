@@ -104,17 +104,22 @@
             align-items: center;
             gap: 12px;
         }
+        .card-header > div:first-child {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
         .card h2 {
             font-size: 1rem;
             font-weight: 500;
             color: var(--text);
-            margin-bottom: 4px;
+            line-height: 1.4;
         }
         .card h3 {
             font-size: 0.85rem;
             font-weight: 400;
             color: var(--text-dim);
-            margin-bottom: 4px;
+            line-height: 1.4;
         }
         .card-meta {
             display: flex;
@@ -149,14 +154,30 @@
         .collapse-inner {
             overflow: hidden;
             padding-top: 0;
-            border-top: none;
-            transition: padding-top 0.3s ease, border-top 0.3s ease;
+            border-top: 1px solid transparent;
+            transition: padding-top 0.3s ease, border-top-color 0.3s ease;
         }
         .card.open .collapse-inner {
-            padding-top: 12px;
-            border-top: 1px solid var(--border);
+            padding-top: 20px;
+            padding-bottom: 10px;
+            border-top-color: var(--border);
+            margin-top: 20px;
         }
         .collapse-content a {
+            display: block;
+            padding-top: 10px;
+            color: var(--accent);
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+        .collapse-content a:first-child {
+            padding-top: 0;
+        }
+        .collapse-content .main-link {
+            color: #f97316;
+            font-weight: 500;
+        }
+        .date-header {
             display: block;
             color: var(--accent);
             font-size: 0.85rem;
@@ -454,8 +475,8 @@
             const deepLinksHtml = hasDeepLinks ? `
                 <div class="collapse-content">
                     <div class="collapse-inner">
-                        <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Open Source Page →</a>
-                        ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Open Target Page →</a>`).join('')}
+                        <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page →</a>
+                        ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page →</a>`).join('')}
                     </div>
                 </div>
             ` : '';
@@ -508,8 +529,8 @@
                     const deepLinksHtml = hasDeepLinks ? `
                         <div class="collapse-content">
                             <div class="collapse-inner">
-                                <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Open Source Page →</a>
-                                ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Open Target Page →</a>`).join('')}
+                                <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page →</a>
+                                ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page →</a>`).join('')}
                             </div>
                         </div>
                     ` : '';
