@@ -93,9 +93,12 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 20px;
+            padding-top: 28px;
             transition: border-color 0.2s;
             text-decoration: none;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
         .card:hover { border-color: #3a3a3a; }
         .card-header {
@@ -137,11 +140,14 @@
             border-radius: 20px;
         }
         .new-badge {
-            font-size: 0.75rem;
+            position: absolute;
+            top: 0;
+            left: 0;
+            font-size: 0.7rem;
             color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
+            background: rgba(34, 197, 94, 0.15);
             padding: 4px 10px;
-            border-radius: 20px;
+            border-radius: 0 0 12px 0;
         }
         .collapse-content {
             display: grid;
@@ -489,7 +495,12 @@
             ` : '';
             
             const meta = card.querySelector('.card-meta');
-            if (meta) meta.innerHTML = newBadge + filesize;
+            if (meta) meta.innerHTML = filesize;
+            
+            const existingBadge = card.querySelector('.new-badge');
+            if (!existingBadge && newBadge) {
+                card.insertAdjacentHTML('afterbegin', newBadge);
+            }
             
             const existingCollapse = card.querySelector('.collapse-content');
             if (existingCollapse) {
@@ -544,13 +555,13 @@
                     
                     return `
                         <div class="card" data-url="${escapeHtml(link.url)}" onclick="toggleCard(this)">
+                            ${newBadge}
                             <div class="card-header">
                                 <div>
                                     ${h2}
                                     ${h3}
                                 </div>
                                 <div class="card-meta">
-                                    ${newBadge}
                                     ${filesize}
                                 </div>
                             </div>
