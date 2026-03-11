@@ -482,8 +482,8 @@
             const deepLinksHtml = hasDeepLinks ? `
                 <div class="collapse-content">
                     <div class="collapse-inner">
-                        <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page →</a>
-                        ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page →</a>`).join('')}
+                        <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page ↗</a>
+                        ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page ↗</a>`).join('')}
                     </div>
                 </div>
             ` : '';
@@ -536,8 +536,8 @@
                     const deepLinksHtml = hasDeepLinks ? `
                         <div class="collapse-content">
                             <div class="collapse-inner">
-                                <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page →</a>
-                                ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page →</a>`).join('')}
+                                <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page ↗</a>
+                                ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page ↗</a>`).join('')}
                             </div>
                         </div>
                     ` : '';
