@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>PC Games News</title>
+    <title>PC Games Updateds</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -93,7 +93,7 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 20px;
-            padding-top: 28px;
+            padding-top: 24px;
             transition: border-color 0.2s;
             text-decoration: none;
             cursor: pointer;
@@ -143,11 +143,12 @@
             position: absolute;
             top: 0;
             left: 0;
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: #22c55e;
             background: rgba(34, 197, 94, 0.15);
-            padding: 4px 10px;
-            border-radius: 0 0 12px 0;
+            padding: 3px 8px;
+            border-radius: 0 0 8px 0;
+            letter-spacing: 0.3px;
         }
         .collapse-content {
             display: grid;
@@ -230,7 +231,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>PC Games News</h1>
+        <h1>PC Games Updateds</h1>
         
         <div class="status">
             <span class="status-dot"></span>
@@ -258,7 +259,7 @@
             document.body.innerHTML = `
                 <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f0f0f;color:#e5e5e5;font-family:system-ui;">
                     <div style="text-align:center;">
-                        <h1 style="margin-bottom:20px;">PC Games News</h1>
+                        <h1 style="margin-bottom:20px;">PC Games Updateds</h1>
                         <input type="password" id="pass" placeholder="Enter password" autofocus 
                             onkeydown="if(event.key==='Enter')document.getElementById('loginBtn').click()"
                             style="padding:12px;border-radius:6px;border:1px solid #333;background:#1a1a1a;color:#fff;margin-bottom:10px;">
@@ -353,14 +354,14 @@
                         const href = link.getAttribute('href');
                         const fullUrl = new URL(href, TARGET_URL).href;
                         const title = elem.textContent.replace('DOWNLOAD', '').replace('ElAmigos', '').trim();
-                        const isNew = elem.tagName === 'H5';
+                        const isUpdated = elem.tagName === 'H5';
                         
                         if (!dateSections[currentDate].some(l => l.url === fullUrl)) {
                             dateSections[currentDate].push({
                                 url: fullUrl,
                                 h2: title,
                                 date: currentDate,
-                                isNew: isNew
+                                isUpdated: isUpdated
                             });
                         }
                     }
@@ -483,7 +484,7 @@
             if (!card) return;
             
             const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
-            const newBadge = link.isNew ? `<span class="new-badge">New</span>` : '';
+            const newBadge = link.isUpdated ? `<span class="new-badge">Updated</span>` : '';
             const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
             const deepLinksHtml = hasDeepLinks ? `
                 <div class="collapse-content">
@@ -542,7 +543,7 @@
                     const h3 = link.h3 ? `<h3>${escapeHtml(link.h3)}</h3>` : '';
                     
                     const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
-                    const newBadge = link.isNew ? `<span class="new-badge">New</span>` : '';
+                    const newBadge = link.isUpdated ? `<span class="new-badge">Updated</span>` : '';
                     const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
                     const deepLinksHtml = hasDeepLinks ? `
                         <div class="collapse-content">
