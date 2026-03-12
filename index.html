@@ -101,6 +101,25 @@
             overflow: hidden;
         }
         .card:hover { border-color: #3a3a3a; }
+        .card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            z-index: 0;
+            pointer-events: none;
+            display: block;
+        }
+        .card.open .card-bg {
+            opacity: 1;
+        }
+        .card > *:not(.card-bg) {
+            position: relative;
+            z-index: 1;
+        }
+        .card:hover { border-color: #3a3a3a; }
         .card-header {
             display: flex;
             justify-content: space-between;
@@ -259,7 +278,7 @@
             document.body.innerHTML = `
                 <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#0f0f0f;color:#e5e5e5;font-family:system-ui;">
                     <div style="text-align:center;">
-                        <h1 style="margin-bottom:20px;">PC Games Updateds</h1>
+                        <h1 style="margin-bottom:20px;">PC Games News</h1>
                         <input type="password" id="pass" placeholder="Enter password" autofocus 
                             onkeydown="if(event.key==='Enter')document.getElementById('loginBtn').click()"
                             style="padding:12px;border-radius:6px;border:1px solid #333;background:#1a1a1a;color:#fff;margin-bottom:10px;">
@@ -577,8 +596,68 @@
 
         function toggleCard(card) {
             const isOpen = card.classList.contains('open');
-            document.querySelectorAll('.card.open').forEach(c => c.classList.remove('open'));
-            if (!isOpen) card.classList.add('open');
+            document.querySelectorAll('.card.open').forEach(c => {
+                c.classList.remove('open');
+                const bg = c.querySelector('.card-bg');
+                if (bg) {
+                    bg.style.opacity = '0';
+                }
+            });
+            if (!isOpen) {
+                card.classList.add('open');
+                const bg = card.querySelector('.card-bg');
+                if (bg) {
+                    bg.style.opacity = '';
+                }
+                const title = card.querySelector('h2')?.textContent;
+                if (title) {
+                    loadGameBackground(card, title);
+                }
+            }
+        }
+
+        async function loadGameBackground(card, title) {
+            try {
+                // Clean up the title
+                let cleanTitle = title
+                    .replace(/\(PC\)/gi, '')
+                    .replace(/ElAmigos/gi, '')
+                    .replace(/Repack/gi, '')
+                    .replace(/Update/gi, '')
+                    .replace(/\d+\.\d+/g, '')
+                    .replace(/v\d+/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                
+                // Use RAWG with the user's API key
+                const searchUrl = `https://api.rawg.io/api/games?key=f171466207244d0aaabe084174f84efd&search=${encodeURIComponent(cleanTitle)}&page_size=1`;
+                const response = await fetch(searchUrl);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    const game = data.results[0];
+                    
+                    if (game.background_image) {
+                        let bgElement = card.querySelector('.card-bg');
+                        if (!bgElement) {
+                            bgElement = document.createElement('div');
+                            bgElement.className = 'card-bg';
+                            bgElement.style.backgroundImage = `linear-gradient(rgba(26,26,26,0.85), rgba(26,26,26,0.85)), url(${game.background_image})`;
+                            bgElement.style.opacity = '0';
+                            card.insertBefore(bgElement, card.firstChild);
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    bgElement.style.opacity = '1';
+                                });
+                            });
+                        } else {
+                            bgElement.style.backgroundImage = `linear-gradient(rgba(26,26,26,0.85), rgba(26,26,26,0.85)), url(${game.background_image})`;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Background load error:', e);
+            }
         }
 
         // Initial load
