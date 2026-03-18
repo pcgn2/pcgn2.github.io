@@ -260,6 +260,18 @@
             margin-bottom: 12px;
             opacity: 0.3;
         }
+
+        @media (max-width: 600px) {
+            .filesize {
+                display: none;
+            }
+            .card .card-meta {
+                display: none;
+            }
+            .card.open .card-meta {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
@@ -429,6 +441,7 @@
                 const filesize = sizeMatch ? `${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}` : null;
                 
                 let rapidgatorLink = null;
+                let youtubeLink = null;
                 const allElements = doc.body ? Array.from(doc.body.querySelectorAll('*')) : [];
                 for (let i = 0; i < allElements.length; i++) {
                     const elem = allElements[i];
@@ -447,11 +460,28 @@
                         if (rapidgatorLink) break;
                     }
                 }
+                for (let i = 0; i < allElements.length; i++) {
+                    const elem = allElements[i];
+                    if (elem.textContent.includes('YOUTUBE')) {
+                        let sibling = elem.nextElementSibling;
+                        while (sibling) {
+                            const link = sibling.querySelector ? sibling.querySelector('a[href$=".html"]') : null;
+                            if (link) {
+                                const href = link.getAttribute('href');
+                                youtubeLink = new URL(href, TARGET_URL).href;
+                                break;
+                            }
+                            if (sibling.textContent.includes('YOUTUBE')) break;
+                            sibling = sibling.nextElementSibling;
+                        }
+                        if (youtubeLink) break;
+                    }
+                }
                 
-                return { filesize, links: rapidgatorLink ? [rapidgatorLink] : [] };
+                return { filesize, links: rapidgatorLink ? [rapidgatorLink] : [], youtube: youtubeLink || null };
             } catch (error) {
                 console.error('Deep crawl error:', error);
-                return { filesize: null, links: [] };
+                return { filesize: null, links: [], youtube: null };
             }
         }
 
@@ -480,13 +510,15 @@
                     if (cachedDeep[url]) {
                         linksToDeepCrawl[i].filesize = cachedDeep[url].filesize;
                         linksToDeepCrawl[i].deepLinks = cachedDeep[url].deepLinks;
+                        linksToDeepCrawl[i].youtube = cachedDeep[url].youtube;
                         updateCard(linksToDeepCrawl[i]);
                     } else {
                         statusText.textContent = `Deep crawling ${i + 1}/${totalToCrawl}...`;
                         const result = await deepCrawlLink(url);
                         linksToDeepCrawl[i].filesize = result.filesize;
                         linksToDeepCrawl[i].deepLinks = result.links;
-                        deepCacheToSave[url] = { filesize: result.filesize, deepLinks: result.links };
+                        linksToDeepCrawl[i].youtube = result.youtube;
+                        deepCacheToSave[url] = { filesize: result.filesize, deepLinks: result.links, youtube: result.youtube };
                         updateCard(linksToDeepCrawl[i]);
                     }
                 }
@@ -519,11 +551,14 @@
             const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
             const newBadge = link.isUpdated ? `<span class="new-badge">Updated</span>` : '';
             const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
-            const deepLinksHtml = hasDeepLinks ? `
+            const hasYoutube = link.youtube;
+            const youtubeLink = hasYoutube ? `<a href="${escapeHtml(link.youtube)}" target="_blank" class="main-link youtube-btn">YouTube ↗</a>` : '';
+            const deepLinksHtml = (hasDeepLinks || hasYoutube) ? `
                 <div class="collapse-content">
                     <div class="collapse-inner">
-                        <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page ↗</a>
-                        ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page ↗</a>`).join('')}
+                        <a href="${escapeHtml(link.url)}" target="_blank">Source ↗</a>
+                        ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target ↗</a>`).join('')}
+                        ${youtubeLink}
                     </div>
                 </div>
             ` : '';
@@ -578,11 +613,14 @@
                     const filesize = link.filesize ? `<span class="filesize">${escapeHtml(link.filesize)}</span>` : '';
                     const newBadge = link.isUpdated ? `<span class="new-badge">Updated</span>` : '';
                     const hasDeepLinks = link.deepLinks && link.deepLinks.length > 0;
-                    const deepLinksHtml = hasDeepLinks ? `
+                    const hasYoutube = link.youtube;
+                    const youtubeLink = hasYoutube ? `<a href="${escapeHtml(link.youtube)}" target="_blank" class="main-link youtube-btn">YouTube ↗</a>` : '';
+                    const deepLinksHtml = (hasDeepLinks || hasYoutube) ? `
                         <div class="collapse-content">
                             <div class="collapse-inner">
-                                <a href="${escapeHtml(link.url)}" target="_blank" class="main-link">Source Page ↗</a>
-                                ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target Page ↗</a>`).join('')}
+                                <a href="${escapeHtml(link.url)}" target="_blank">Source ↗</a>
+                                ${link.deepLinks.map(l => `<a href="${escapeHtml(l)}" target="_blank">Target ↗</a>`).join('')}
+                                ${youtubeLink}
                             </div>
                         </div>
                     ` : '';
@@ -632,7 +670,6 @@
 
         async function loadGameBackground(card, title) {
             try {
-                // Clean up the title
                 let cleanTitle = title
                     .replace(/\(PC\)/gi, '')
                     .replace(/ElAmigos/gi, '')
@@ -643,7 +680,6 @@
                     .replace(/\s+/g, ' ')
                     .trim();
                 
-                // Use RAWG with the user's API key
                 const searchUrl = `https://api.rawg.io/api/games?key=f171466207244d0aaabe084174f84efd&search=${encodeURIComponent(cleanTitle)}&page_size=1`;
                 const response = await fetch(searchUrl);
                 const data = await response.json();
@@ -666,6 +702,52 @@
                             });
                         } else {
                             bgElement.style.backgroundImage = `linear-gradient(rgba(26,26,26,0.85), rgba(26,26,26,0.85)), url(${game.background_image})`;
+                        }
+                    }
+                    
+                    if (game.id) {
+                        const searchQuery = `${cleanTitle} game trailer`;
+                        const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+                        try {
+                            const ytResp = await fetch(CORS_PROXY + ytSearchUrl);
+                            const ytHtml = await ytResp.text();
+                            const videoMatch = ytHtml.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+                            
+                            if (videoMatch) {
+                                const videoId = videoMatch[1];
+                                const trailerLink = `https://www.youtube.com/watch?v=${videoId}`;
+                                
+                                let collapseContent = card.querySelector('.collapse-content');
+                                if (!collapseContent) {
+                                    collapseContent = document.createElement('div');
+                                    collapseContent.className = 'collapse-content';
+                                    const collapseInner = document.createElement('div');
+                                    collapseInner.className = 'collapse-inner';
+                                    collapseContent.appendChild(collapseInner);
+                                    card.appendChild(collapseContent);
+                                    card.classList.add('open');
+                                }
+                                let trailerBtn = card.querySelector('.trailer-btn');
+                                if (!trailerBtn) {
+                                    const collapseInner = card.querySelector('.collapse-inner');
+                                    if (collapseInner) {
+                                        trailerBtn = document.createElement('a');
+                                        trailerBtn.className = 'trailer-btn';
+                                        trailerBtn.target = '_blank';
+                                        collapseInner.appendChild(trailerBtn);
+                                    }
+                                }
+                                if (trailerBtn) {
+                                    trailerBtn.href = trailerLink;
+                                    trailerBtn.textContent = 'Trailer ↗';
+                                    const youtubeBtn = collapseInner.querySelector('.youtube-btn');
+                                    if (youtubeBtn) {
+                                        collapseInner.insertBefore(trailerBtn, youtubeBtn);
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error('YouTube search error:', e);
                         }
                     }
                 }
