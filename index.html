@@ -223,8 +223,26 @@ function parseDeepPage(body) {
   const filesize = sz ? `${sz[1]} ${sz[2].toUpperCase()}` : null
   const yt = body.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/)
   const youtube = yt ? yt[0] : null
-  const rg = body.match(/https?:\/\/filecrypt\.cc\/Container\/[^"'\s<>]+/)
-  const rapidgator = rg ? rg[0] : null
+
+  // First link after "RAPIDGATOR" text
+  let rapidgator = null
+  const lines = body.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (/RAPIDGATOR/i.test(lines[i])) {
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        const m = lines[j].match(/href="([^"]+\.html)"/i)
+        if (m) { rapidgator = new URL(m[1], 'https://elamigos.site').href; break }
+      }
+      if (rapidgator) break
+    }
+  }
+
+  // Fallback to any filecrypt link
+  if (!rapidgator) {
+    const rg = body.match(/https?:\/\/filecrypt\.cc\/Container\/[^"'\s<>]+/)
+    rapidgator = rg ? rg[0] : null
+  }
+
   return { filesize, youtube, rapidgator }
 }
 

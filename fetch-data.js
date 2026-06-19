@@ -68,26 +68,26 @@ function parseDeepPage(body) {
   const filesize = sizeMatch ? `${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}` : null;
   let rapidgator = null, youtube = null;
 
-  // YouTube: look for standalone youtube URLs in <p> tags
+  // YouTube: look for standalone youtube URLs
   const ytMatch = body.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
   if (ytMatch) youtube = ytMatch[0];
 
-  // Rapidgator: look for filecrypt links (common pattern after RAPIDGATOR text)
-  const rgMatch = body.match(/https?:\/\/filecrypt\.cc\/Container\/[^"'\s<>]+/);
-  if (rgMatch) rapidgator = rgMatch[0];
-
-  // Also try finding rapidgator via RAPIDGATOR heading pattern
-  if (!rapidgator) {
-    const lines = body.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('RAPIDGATOR') && !rapidgator) {
-        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-          const m = lines[j].match(/href="([^"]+\.html)"/i);
-          if (m) { rapidgator = new URL(m[1], TARGET).href; break; }
-        }
+  // Rapidgator: first link after "RAPIDGATOR" text
+  const lines = body.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (/RAPIDGATOR/i.test(lines[i])) {
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        const m = lines[j].match(/href="([^"]+\.html)"/i);
+        if (m) { rapidgator = new URL(m[1], TARGET).href; break; }
       }
-      if (rapidgator && youtube) break;
+      if (rapidgator) break;
     }
+  }
+
+  // Fallback to any filecrypt link
+  if (!rapidgator) {
+    const rgMatch = body.match(/https?:\/\/filecrypt\.cc\/Container\/[^"'\s<>]+/);
+    if (rgMatch) rapidgator = rgMatch[0];
   }
 
   return { filesize, rapidgator, youtube };
