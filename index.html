@@ -224,11 +224,11 @@ function parseDeepPage(body) {
   const yt = body.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/)
   const youtube = yt ? yt[0] : null
 
-  // First link after "RAPIDGATOR" text
+  // First link after <h2>RAPIDGATOR</h2>
   let rapidgator = null
   const lines = body.split('\n')
   for (let i = 0; i < lines.length; i++) {
-    if (/RAPIDGATOR/i.test(lines[i])) {
+    if (/<h2[^>]*>RAPIDGATOR<\/h2>/i.test(lines[i])) {
       for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
         const m = lines[j].match(/href="([^"]+\.html)"/i)
         if (m) { rapidgator = new URL(m[1], 'https://elamigos.site').href; break }
