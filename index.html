@@ -171,7 +171,6 @@ searchEl.addEventListener('input', render)
 function setData(links, fetched) {
   allLinks = links
   render()
-  statusEl.textContent = `${links.length} items`
   if (fetched) {
     const d = new Date(fetched)
     dateEl.textContent = `Updated ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
