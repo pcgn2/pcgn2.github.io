@@ -93,12 +93,6 @@ function login() {
   }
 }
 
-if (getCookie(COOKIE_NAME) === PASSWORD) {
-  document.getElementById('loginScreen').style.display = 'none'
-  document.getElementById('app').style.display = 'block'
-  main()
-}
-
 const CACHE_KEY = 'pcgames_v4'
 const CACHE_TTL = 864e5 // 1 day
 const PROXIES = [
@@ -112,6 +106,12 @@ const dateEl = $('#fetchDate')
 const resultsEl = $('#results')
 const searchEl = $('#search')
 let allLinks = []
+
+if (getCookie(COOKIE_NAME) === PASSWORD) {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+  main()
+}
 
 function esc(s) {
   if (!s) return ''
