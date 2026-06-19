@@ -72,10 +72,10 @@ function parseDeepPage(body) {
   const ytMatch = body.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
   if (ytMatch) youtube = ytMatch[0];
 
-  // Rapidgator: first link after "RAPIDGATOR" text
+  // Rapidgator: first link after <h2>RAPIDGATOR</h2>
   const lines = body.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    if (/RAPIDGATOR/i.test(lines[i])) {
+    if (/<h2[^>]*>RAPIDGATOR<\/h2>/i.test(lines[i])) {
       for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
         const m = lines[j].match(/href="([^"]+\.html)"/i);
         if (m) { rapidgator = new URL(m[1], TARGET).href; break; }
