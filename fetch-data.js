@@ -94,22 +94,49 @@ function parseDeepPage(body) {
 }
 
 async function main() {
+  // Load existing cache
+  let cache = {};
+  const cachePath = path.join(__dirname, 'data.json');
+  try {
+    const existing = JSON.parse(fs.readFileSync(cachePath, 'utf-8'));
+    if (existing.links) {
+      for (const l of existing.links) cache[l.url] = l;
+    }
+  } catch {}
+
   console.log('Fetching main page...');
   const { body } = await fetchUrl(TARGET);
   const links = crawlMainPage(body);
   console.log(`Found ${links.length} games`);
 
+  let crawled = 0, skipped = 0;
+
   for (let i = 0; i < links.length; i++) {
-    process.stdout.write(`\rDeep crawl ${i + 1}/${links.length}...`);
-    const deep = await parseDeepPage((await fetchUrl(links[i].url)).body);
+    const url = links[i].url;
+    const cached = cache[url];
+
+    if (cached && cached.filesize && cached.rapidgator && !links[i].updated) {
+      // Reuse cached data (skip deep crawl unless marked as updated)
+      links[i].filesize = cached.filesize;
+      links[i].rapidgator = cached.rapidgator;
+      links[i].youtube = cached.youtube;
+      skipped++;
+      continue;
+    }
+
+    process.stdout.write(`\rDeep crawl ${++crawled}/${links.length}...`);
+    const deep = await parseDeepPage((await fetchUrl(url)).body);
     links[i].filesize = deep.filesize;
     links[i].rapidgator = deep.rapidgator;
     links[i].youtube = deep.youtube;
+    // Rate-limit to be gentle
+    await new Promise(r => setTimeout(r, 200));
   }
 
-  console.log('\nSaving data.json...');
-  fs.writeFileSync(path.join(__dirname, 'data.json'), JSON.stringify({ links, fetched: Date.now() }));
-  console.log('Done! Open index.html in a browser.');
+  console.log(`\nCrawled ${crawled}, reused ${skipped}`);
+  console.log('Saving data.json...');
+  fs.writeFileSync(cachePath, JSON.stringify({ links, fetched: Date.now() }));
+  console.log('Done!');
 }
 
 main().catch(err => { console.error('\nError:', err.message); process.exit(1); });
