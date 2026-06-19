@@ -171,6 +171,7 @@ searchEl.addEventListener('input', render)
 function setData(links, fetched) {
   allLinks = links
   render()
+  statusEl.textContent = ''
   if (fetched) {
     const d = new Date(fetched)
     dateEl.textContent = `Updated ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
@@ -251,6 +252,7 @@ async function liveFetch() {
 }
 
 async function main() {
+  statusEl.textContent = ''
   // 1. Try data.json (primary for GitHub Pages)
   try {
     const res = await fetch('data.json')
@@ -279,7 +281,7 @@ async function main() {
   try {
     await liveFetch()
   } catch (err) {
-    statusEl.textContent = 'Could not load data'
+    statusEl.textContent = ''
     resultsEl.innerHTML = `
       <div class="empty">
         No game data available.<br><br>
