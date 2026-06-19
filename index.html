@@ -163,7 +163,7 @@ function render() {
     </div>
   `).join('')
 
-  statsEl.textContent = ''
+  statsEl.textContent = `${filtered.length} games`
 }
 
 searchEl.addEventListener('input', render)
@@ -171,7 +171,7 @@ searchEl.addEventListener('input', render)
 function setData(links, fetched) {
   allLinks = links
   render()
-  statusEl.textContent = ''
+  statusEl.textContent = `${links.length} games`
   if (fetched) {
     const d = new Date(fetched)
     dateEl.textContent = `Updated ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
@@ -252,7 +252,7 @@ async function liveFetch() {
 }
 
 async function main() {
-  statusEl.textContent = ''
+  statusEl.textContent = 'Loading...'
   // 1. Try data.json (primary for GitHub Pages)
   try {
     const res = await fetch('data.json')
