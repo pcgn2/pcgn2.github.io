@@ -60,7 +60,7 @@ function crawlMainPage(html) {
 
   const links = [];
   for (const date of sorted) links.push(...sections[date]);
-  return links.slice(0, 200);
+  return links;
 }
 
 function parseDeepPage(body) {
