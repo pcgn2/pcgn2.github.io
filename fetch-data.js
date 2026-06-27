@@ -119,12 +119,12 @@ async function main() {
     const url = links[i].url;
     const cached = cache[url];
 
-    if (cached && cached.filesize && cached.rapidgator && cached.cover && !links[i].updated) {
+    if (cached && cached.filesize && cached.rapidgator && !links[i].updated) {
       // Reuse cached data (skip deep crawl unless marked as updated)
       links[i].filesize = cached.filesize;
       links[i].rapidgator = cached.rapidgator;
-      links[i].youtube = cached.youtube;
-      links[i].cover = cached.cover;
+      links[i].youtube = cached.youtube || '';
+      links[i].cover = cached.cover || '';
       skipped++;
       continue;
     }
