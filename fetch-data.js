@@ -98,16 +98,17 @@ async function crawlTrending(html) {
   if (navIx < 0) return [];
   const after = html.slice(navIx);
   const results = [];
-  const re = /<a\s+href="([^"]+\.html)"[^>]*>\s*<img\s+src="([^"]+)"[^>]*>\s*<\/a>/gi;
+  const re = /<a\s+href="([^"]+\.html)"[^>]*>\s*<img\s+src="[^"]+"[^>]*>\s*<\/a>/gi;
   let m;
   while ((m = re.exec(after)) !== null && results.length < 8) {
     const url = new URL(m[1], TARGET).href;
-    const cover = new URL(m[2], TARGET).href;
-    let title = '';
+    let title = '', cover = '';
     try {
       const { body } = await fetchUrl(url);
       const tm = body.match(/<title>(.*?)<\/title>/i);
       if (tm) title = tm[1].replace(/\s*-\s*ElAmigos official site\s*/i, '').trim();
+      const img = body.match(/<img\s+src="(https?:\/\/[^"]+)"[^>]*>/i);
+      if (img) cover = img[1];
     } catch {}
     if (!title) title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim();
     results.push({ url, title, cover });
