@@ -391,10 +391,7 @@ async function main() {
 
   // Try fetching fresh data.json (GitHub Pages)
   try {
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), 20000)
-    const res = await fetch('data.json', { signal: ctrl.signal })
-    clearTimeout(timer)
+    const res = await fetch('data.json')
     if (res.ok) {
       const fresh = await res.json()
       if (fresh.links?.length) {
