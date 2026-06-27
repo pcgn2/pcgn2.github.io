@@ -61,7 +61,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 @media(max-width:700px){#scrollTop{display:none!important}}
 @media(max-width:600px){body{padding:16px 12px}.nav{padding:10px 12px;margin:-16px -12px 12px}}
 </style>
-<script src="data.js"></script>
 </head>
 <body>
 <div id="loginScreen" style="display:flex;justify-content:center;align-items:center;min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -403,25 +402,36 @@ async function liveFetch() {
 async function main() {
   statusEl.textContent = 'Loading...'
 
-  // 0. Load from data.js script tag (full dataset with covers, works locally)
-  const hasGameData = typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length
-  if (hasGameData) {
-    await setData(GAME_DATA.links, GAME_DATA.fetched, GAME_DATA.trending)
+  // file:// protocol: data.js is the only data source (fetch doesn't work locally)
+  if (location.protocol === 'file:') {
+    try {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script')
+        s.src = 'data.js'
+        s.onload = resolve
+        s.onerror = reject
+        document.head.appendChild(s)
+      })
+      if (typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length) {
+        await setData(GAME_DATA.links, GAME_DATA.fetched, GAME_DATA.trending)
+        return
+      }
+    } catch {}
   }
 
-
-  // 1. Try localStorage cache (faster than fetch)
+  // Try localStorage cache (faster than fetch)
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (raw) {
-      const { data, timestamp } = JSON.parse(raw)
+      const { data, timestamp, trending } = JSON.parse(raw)
       if (Date.now() - timestamp < CACHE_TTL && data) {
         await setData(data.links || data, data.fetched || timestamp, data.trending)
+        return
       }
     }
   } catch {}
 
-  // 2. Try fetching fresh data.json (GitHub Pages)
+  // Try fetching fresh data.json (GitHub Pages)
   try {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), 5000)
@@ -437,7 +447,7 @@ async function main() {
     }
   } catch (e) { console.warn('data.json:', e.message) }
 
-  // 3. Fallback if nothing loaded
+  // Fallback if nothing loaded
   if (!allLinks.length) {
     try { await liveFetch() } catch {}
     if (!allLinks.length) {
