@@ -235,12 +235,11 @@ function render() {
 }
 
 async function renderTrending() {
-  const TRENDING_URLS_KEY = 'pcgames_trending_urls'
-  const TRENDING_TITLES_KEY = 'pcgames_trending_titles'
+  const TRENDING_CACHE_KEY = 'pcgames_trending_v2'
 
   // Get trending data from cache or fetch main page
   let trendingData = []
-  try { trendingData = JSON.parse(localStorage.getItem(TRENDING_URLS_KEY) || '[]') } catch {}
+  try { trendingData = JSON.parse(localStorage.getItem(TRENDING_CACHE_KEY) || '[]') } catch {}
 
   if (!trendingData.length) {
     const html = await tryProxies('https://elamigos.site')
@@ -249,9 +248,10 @@ async function renderTrending() {
       const after = html.slice(navIx)
       let count = 0
       for (const line of after.split('\n')) {
-        const imgA = line.match(/<a\s+href="([^"]+\.html)"[^>]*>\s*<img\s+src="[^"]+"[^>]*>\s*<\/a>/i)
-        if (imgA) {
-          const url = new URL(imgA[1], 'https://elamigos.site').href
+        if (!line.includes('<img')) continue
+        const a = line.match(/<a\s+href="([^"]+)"[^>]*>/i)
+        if (a) {
+          const url = new URL(a[1], 'https://elamigos.site').href
           let title = ''
           try {
             const deepHtml = await tryProxies(url)
@@ -265,7 +265,7 @@ async function renderTrending() {
         }
       }
     }
-    try { localStorage.setItem(TRENDING_URLS_KEY, JSON.stringify(trendingData)) } catch {}
+    try { localStorage.setItem(TRENDING_CACHE_KEY, JSON.stringify(trendingData)) } catch {}
   }
 
   // Merge with allLinks data (filesize, rapidgator, youtube, date)
