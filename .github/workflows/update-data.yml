@@ -19,7 +19,7 @@ jobs:
           node-version: 22
       - run: node fetch-data.js
       - run: node -e "const d=require('./data.json'); require('fs').writeFileSync('data.js','var GAME_DATA = '+JSON.stringify(d)+';')"
-      - run: cp index.src.html index.html && npx staticrypt index.html -p "1337" --short -t password_template.html -d encrypted 2>/dev/null && cp encrypted/index.html . && rm -rf encrypted
+      - run: cp index.src.html index.html && sed -i "s/__DATA_VERSION__/$(date +%s)/g" index.html && npx staticrypt index.html -p "1337" --short -t password_template.html -d encrypted 2>/dev/null && cp encrypted/index.html . && rm -rf encrypted
       - run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"

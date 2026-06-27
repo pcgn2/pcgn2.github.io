@@ -379,7 +379,7 @@ async function main() {
 
   // Try fetching fresh data.json (GitHub Pages)
   try {
-    const res = await fetch('data.json')
+    const res = await fetch('data.json?t=1782542753')
     if (res.ok) {
       const fresh = await res.json()
       if (fresh.links?.length) {
@@ -407,7 +407,7 @@ async function tryLoadDataJS() {
   try {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script')
-      s.src = 'data.js'
+      s.src = 'data.js?t=1782542753'
       s.onload = resolve
       s.onerror = reject
       document.head.appendChild(s)
