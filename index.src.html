@@ -93,10 +93,6 @@ const CACHE_KEY = 'pcgames_v4'
 const CACHE_TTL = 864e5 // 1 day
 let sortMode = 'date'
 let sortedLinks = []
-const PROXIES = [
-  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-]
 
 const $ = s => document.querySelector(s)
 const statusEl = $('#statusText')
@@ -105,7 +101,6 @@ const resultsEl = $('#results')
 const trendingEl = $('#trending')
 const searchEl = $('#search')
 const TRENDING_COUNT = 8
-const COVER_CACHE_KEY = 'pcgames_covers'
 let allLinks = []
 let trendingData = []
 
@@ -197,52 +192,15 @@ function render() {
   }
 }
 
+function coverUrl(u) {
+  if (!u) return ''
+  if (u.includes('fastpic.org'))
+    return `https://images.weserv.nl/?url=${encodeURIComponent(u)}&output=webp&q=80`
+  return u
+}
+
 async function renderTrending() {
-  let list = trendingData.slice(0, TRENDING_COUNT)
-
-  // Fallback: fetch trending from main page if no pre-fetched data
-  if (!list.length) {
-    const html = await tryProxies('https://elamigos.site')
-    const re = /href="(data\/[^"]+\.html)"/gi
-    let m, urls = []
-    while ((m = re.exec(html)) !== null && urls.length < TRENDING_COUNT) {
-      urls.push(new URL(m[1], 'https://elamigos.site').href)
-    }
-    const urlIndex = {}
-    for (const link of allLinks) urlIndex[link.url] = link
-    list = urls.map(url => {
-      const match = urlIndex[url]
-      let title = ''
-      if (match) return { ...match }
-      try { title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim() } catch {}
-      return { url, title, date: '', filesize: '', rapidgator: '', youtube: '' }
-    })
-  }
-
-  // Fetch covers on-demand for any missing
-  let coverCache = {}
-  try { coverCache = JSON.parse(localStorage.getItem(COVER_CACHE_KEY) || '{}') } catch {}
-  for (const link of list) {
-    if (link.cover) continue
-    if (coverCache[link.url]) { link.cover = coverCache[link.url]; continue }
-    try {
-      const deepHtml = await tryProxies(link.url)
-      const img = deepHtml.match(/<img\s+src="([^"]+)"/i)
-      if (img) {
-        link.cover = img[1]
-        coverCache[link.url] = img[1]
-      }
-    } catch {}
-  }
-  try { localStorage.setItem(COVER_CACHE_KEY, JSON.stringify(coverCache)) } catch {}
-
-  function coverUrl(u) {
-    if (!u) return ''
-    if (u.includes('fastpic.org'))
-      return `https://images.weserv.nl/?url=${encodeURIComponent(u)}&output=webp&q=80`
-    return u
-  }
-
+  const list = trendingData.slice(0, TRENDING_COUNT)
   trendingEl.innerHTML = `
     <div class="trending">
       <div class="date-header">Trending</div>
@@ -273,106 +231,13 @@ async function setData(links, fetched, trending) {
   }
 }
 
-async function tryProxies(url) {
-  for (let i = 0; i < PROXIES.length; i++) {
-    try {
-      statusEl.textContent = `Trying proxy ${i + 1}/${PROXIES.length}...`
-      const res = await fetch(PROXIES[i](url), { signal: AbortSignal.timeout(15000) })
-      if (!res.ok) continue
-      return await res.text()
-    } catch {}
-  }
-  throw new Error('All proxies failed')
-}
-
-function parseLinks(html) {
-  const sections = {}
-  let currentDate = null
-  for (const line of html.split('\n')) {
-    const h1 = line.match(/<h1[^>]*>(.*?)<\/h1>/i)
-    if (h1) {
-      const dmy = h1[1].match(/(\d{2})\.(\d{2})\.(\d{4})/)
-      if (dmy) { currentDate = `${dmy[1]}.${dmy[2]}.${dmy[3]}`; sections[currentDate] = [] }
-      continue
-    }
-    if (!currentDate) continue
-    const h3 = line.match(/<(h3|h5)[^>]*>(.*?)<\/\1>/i)
-    if (h3) {
-      const a = h3[2].match(/<a\s+href="([^"]+\.html)"[^>]*>/i)
-      if (a) {
-        const url = new URL(a[1], 'https://elamigos.site').href
-        const title = h3[2].replace(/<[^>]+>/g, '').replace(/DOWNLOAD|ElAmigos|Repack|Update/gi, '').trim()
-        if (!sections[currentDate].some(l => l.url === url)) {
-          sections[currentDate].push({ url, title, date: currentDate, updated: h3[1].toLowerCase() === 'h5' })
-        }
-      }
-    }
-  }
-  const sorted = Object.keys(sections).sort((a, b) => {
-    const [d1,m1,y1] = a.split('.').map(Number)
-    const [d2,m2,y2] = b.split('.').map(Number)
-    return new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1)
-  })
-  const links = []
-  for (const date of sorted) links.push(...sections[date])
-  return links
-}
-
-function parseDeepPage(body) {
-  const sz = body.match(/(\d+(?:\.\d+)?)\s*(GB|MB)/i)
-  const filesize = sz ? `${sz[1]} ${sz[2].toUpperCase()}` : null
-  const yt = body.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/)
-  const youtube = yt ? yt[0] : null
-
-  // First link after <h2>RAPIDGATOR</h2>
-  let rapidgator = null
-  const lines = body.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (/<h2[^>]*>RAPIDGATOR<\/h2>/i.test(lines[i])) {
-      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
-        const m = lines[j].match(/href="([^"]+\.html)"/i)
-        if (m) { rapidgator = new URL(m[1], 'https://elamigos.site').href; break }
-      }
-      if (rapidgator) break
-    }
-  }
-
-  // Fallback to any filecrypt link
-  if (!rapidgator) {
-    const rg = body.match(/https?:\/\/filecrypt\.cc\/Container\/[^"'\s<>]+/)
-    rapidgator = rg ? rg[0] : null
-  }
-
-  return { filesize, youtube, rapidgator }
-}
-
-async function liveFetch() {
-  statusEl.textContent = 'Fetching...'
-  const html = await tryProxies('https://elamigos.site')
-  const links = parseLinks(html)
-
-  for (let i = 0; i < links.length; i++) {
-    statusEl.textContent = `Deep ${i + 1}/${links.length}...`
-    try {
-      const deepHtml = await tryProxies(links[i].url)
-      Object.assign(links[i], parseDeepPage(deepHtml))
-    } catch {}
-  }
-
-  const payload = { links, fetched: Date.now() }
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(payload)) } catch {}
-  setData(links, Date.now())
-}
-
 async function main() {
   statusEl.textContent = 'Loading...'
 
-  // file:// protocol: data.js is the only data source (fetch doesn't work locally)
-  if (location.protocol === 'file:') {
-    if (await tryLoadDataJS()) return
-  }
+  // Try data.js — works on both file:// and GitHub Pages
+  if (await tryLoadDataJS()) return
 
-  // Try localStorage cache (faster than script load)
+  // Fallback: try localStorage cache
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (raw) {
@@ -384,17 +249,8 @@ async function main() {
     }
   } catch {}
 
-  // Try data.js — works on both file:// and GitHub Pages
-  if (await tryLoadDataJS()) return
-
-  // Last resort: live fetch via proxies
-  if (!allLinks.length) {
-    try { await liveFetch() } catch {}
-    if (!allLinks.length) {
-      statusEl.textContent = 'No data'
-      resultsEl.innerHTML = '<div class="empty">No game data available.</div>'
-    }
-  }
+  statusEl.textContent = 'No data'
+  resultsEl.innerHTML = '<div class="empty">No game data available.</div>'
 }
 
 async function tryLoadDataJS() {
