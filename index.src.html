@@ -236,13 +236,20 @@ async function renderTrending() {
   }
   try { localStorage.setItem(COVER_CACHE_KEY, JSON.stringify(coverCache)) } catch {}
 
+  function coverUrl(u) {
+    if (!u) return ''
+    if (u.includes('fastpic.org'))
+      return `https://images.weserv.nl/?url=${encodeURIComponent(u)}&output=webp&q=80`
+    return u
+  }
+
   trendingEl.innerHTML = `
     <div class="trending">
       <div class="date-header">Trending</div>
       <div class="trending-scroll">
         ${list.map(link => `
           <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
-            <img src="${esc(link.cover || '')}" alt="" loading="lazy" onerror="this.style.display='none'">
+            <img src="${esc(coverUrl(link.cover))}" alt="" loading="lazy" onerror="this.src='${esc(link.cover || '')}';this.onerror=null">
           </div>
         `).join('')}
       </div>
