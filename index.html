@@ -137,6 +137,7 @@ const resultsEl = $('#results')
 const trendingEl = $('#trending')
 const searchEl = $('#search')
 const TRENDING_COUNT = 8
+const COVER_CACHE_KEY = 'pcgames_covers'
 let allLinks = []
 
 if (getCookie(COOKIE_NAME) === PASSWORD) {
@@ -241,15 +242,26 @@ async function renderTrending() {
   })
   const trending = sorted.slice(0, TRENDING_COUNT)
 
+  // Load cached covers from localStorage
+  let coverCache = {}
+  try { coverCache = JSON.parse(localStorage.getItem(COVER_CACHE_KEY) || '{}') } catch {}
+
   // Fetch covers on-demand for any that are missing
   for (const link of trending) {
     if (link.cover) continue
+    if (coverCache[link.url]) { link.cover = coverCache[link.url]; continue }
     try {
       const html = await tryProxies(link.url)
       const m = html.match(/<img\s+src="([^"]+)"/i)
-      if (m) link.cover = m[1]
+      if (m) {
+        link.cover = m[1]
+        coverCache[link.url] = m[1]
+      }
     } catch {}
   }
+
+  // Persist cover cache
+  try { localStorage.setItem(COVER_CACHE_KEY, JSON.stringify(coverCache)) } catch {}
 
   trendingEl.innerHTML = `
     <div class="trending">
