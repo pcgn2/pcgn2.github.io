@@ -144,6 +144,7 @@ const searchEl = $('#search')
 const TRENDING_COUNT = 8
 const COVER_CACHE_KEY = 'pcgames_covers'
 let allLinks = []
+let trendingData = []
 
 if (getCookie(COOKIE_NAME) === PASSWORD) {
   document.getElementById('loginScreen').style.display = 'none'
@@ -240,43 +241,31 @@ function render() {
 }
 
 async function renderTrending() {
-  const TRENDING_CACHE_KEY = 'pcgames_trending_v3'
+  let list = trendingData.slice(0, TRENDING_COUNT)
 
-  let trendingData = []
-  try { trendingData = JSON.parse(localStorage.getItem(TRENDING_CACHE_KEY) || '[]') } catch {}
-
-  if (!trendingData.length) {
+  // Fallback: fetch trending from main page if no pre-fetched data
+  if (!list.length) {
     const html = await tryProxies('https://elamigos.site')
-    let count = 0
     const re = /href="(data\/[^"]+\.html)"/gi
-    let m
-    while ((m = re.exec(html)) !== null) {
-      const url = new URL(m[1], 'https://elamigos.site').href
-      let title = ''
-      try {
-        const deepHtml = await tryProxies(url)
-        const tm = deepHtml.match(/<title>(.*?)<\/title>/i)
-        if (tm) title = tm[1].replace(/\s*-\s*ElAmigos official site\s*/i, '').trim()
-      } catch {}
-      if (!title) title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim()
-      trendingData.push({ url, title })
-      count++
-      if (count >= TRENDING_COUNT) break
+    let m, urls = []
+    while ((m = re.exec(html)) !== null && urls.length < TRENDING_COUNT) {
+      urls.push(new URL(m[1], 'https://elamigos.site').href)
     }
-    try { localStorage.setItem(TRENDING_CACHE_KEY, JSON.stringify(trendingData)) } catch {}
+    const urlIndex = {}
+    for (const link of allLinks) urlIndex[link.url] = link
+    list = urls.map(url => {
+      const match = urlIndex[url]
+      let title = ''
+      if (match) return { ...match }
+      try { title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim() } catch {}
+      return { url, title, date: '', filesize: '', rapidgator: '', youtube: '' }
+    })
   }
 
-  const urlIndex = {}
-  for (const link of allLinks) urlIndex[link.url] = link
-  const trending = trendingData.map(d => {
-    const match = urlIndex[d.url]
-    return match ? { ...match, trendingTitle: d.title } : { url: d.url, title: d.title, trendingTitle: d.title, date: '', filesize: '', rapidgator: '', youtube: '' }
-  }).slice(0, TRENDING_COUNT)
-
+  // Fetch covers on-demand for any missing
   let coverCache = {}
   try { coverCache = JSON.parse(localStorage.getItem(COVER_CACHE_KEY) || '{}') } catch {}
-
-  for (const link of trending) {
+  for (const link of list) {
     if (link.cover) continue
     if (coverCache[link.url]) { link.cover = coverCache[link.url]; continue }
     try {
@@ -288,17 +277,15 @@ async function renderTrending() {
       }
     } catch {}
   }
-
   try { localStorage.setItem(COVER_CACHE_KEY, JSON.stringify(coverCache)) } catch {}
 
   trendingEl.innerHTML = `
     <div class="trending">
       <div class="date-header">Trending</div>
       <div class="trending-scroll">
-        ${trending.map(link => `
+        ${list.map(link => `
           <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
             <img src="${esc(link.cover || '')}" alt="" loading="lazy" onerror="this.style.display='none'">
-            <div class="overlay">${esc(link.trendingTitle || link.title)}</div>
           </div>
         `).join('')}
       </div>
@@ -308,8 +295,9 @@ async function renderTrending() {
 
 searchEl.addEventListener('input', render)
 
-async function setData(links, fetched) {
+async function setData(links, fetched, trending) {
   allLinks = links
+  if (trending) trendingData = trending
   sortMode = 'date'
   document.querySelector('.sort-btn[data-sort="date"]')?.classList.add('active')
   render()
@@ -418,7 +406,7 @@ async function main() {
   // 0. Load from data.js script tag (full dataset with covers, works locally)
   const hasGameData = typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length
   if (hasGameData) {
-    await setData(GAME_DATA.links, GAME_DATA.fetched)
+    await setData(GAME_DATA.links, GAME_DATA.fetched, GAME_DATA.trending)
   }
 
 
@@ -428,7 +416,7 @@ async function main() {
     if (raw) {
       const { data, timestamp } = JSON.parse(raw)
       if (Date.now() - timestamp < CACHE_TTL && data) {
-        await setData(data.links || data, data.fetched || timestamp)
+        await setData(data.links || data, data.fetched || timestamp, data.trending)
       }
     }
   } catch {}
@@ -442,8 +430,8 @@ async function main() {
     if (res.ok) {
       const fresh = await res.json()
       if (fresh.links?.length) {
-        await setData(fresh.links, fresh.fetched)
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: fresh.links, timestamp: fresh.fetched || Date.now() }))
+        await setData(fresh.links, fresh.fetched, fresh.trending)
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: fresh.links, trending: fresh.trending, timestamp: fresh.fetched || Date.now() }))
         return
       }
     }

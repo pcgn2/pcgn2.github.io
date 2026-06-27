@@ -93,8 +93,30 @@ function parseDeepPage(body) {
   return { filesize, rapidgator, youtube };
 }
 
+async function crawlTrending(html) {
+  const navIx = html.indexOf('fixed-nav-bar');
+  if (navIx < 0) return [];
+  const after = html.slice(navIx);
+  const results = [];
+  const re = /<a\s+href="([^"]+\.html)"[^>]*>\s*<img\s+src="([^"]+)"[^>]*>\s*<\/a>/gi;
+  let m;
+  while ((m = re.exec(after)) !== null && results.length < 8) {
+    const url = new URL(m[1], TARGET).href;
+    const cover = new URL(m[2], TARGET).href;
+    let title = '';
+    try {
+      const { body } = await fetchUrl(url);
+      const tm = body.match(/<title>(.*?)<\/title>/i);
+      if (tm) title = tm[1].replace(/\s*-\s*ElAmigos official site\s*/i, '').trim();
+    } catch {}
+    if (!title) title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim();
+    results.push({ url, title, cover });
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return results;
+}
+
 async function main() {
-  // Load existing cache
   let cache = {};
   const cachePath = path.join(__dirname, 'data.json');
   try {
@@ -116,7 +138,6 @@ async function main() {
     const cached = cache[url];
 
     if (cached && cached.filesize && cached.rapidgator && !links[i].updated) {
-      // Reuse cached data (skip deep crawl unless marked as updated)
       links[i].filesize = cached.filesize;
       links[i].rapidgator = cached.rapidgator;
       links[i].youtube = cached.youtube || '';
@@ -129,13 +150,17 @@ async function main() {
     links[i].filesize = deep.filesize;
     links[i].rapidgator = deep.rapidgator;
     links[i].youtube = deep.youtube;
-    // Rate-limit to be gentle
     await new Promise(r => setTimeout(r, 200));
   }
 
   console.log(`\nCrawled ${crawled}, reused ${skipped}`);
+
+  console.log('Crawling trending games...');
+  const trending = await crawlTrending(body);
+  console.log(`Found ${trending.length} trending games`);
+
   console.log('Saving data.json...');
-  fs.writeFileSync(cachePath, JSON.stringify({ links, fetched: Date.now() }));
+  fs.writeFileSync(cachePath, JSON.stringify({ links, trending, fetched: Date.now() }));
   console.log('Done!');
 }
 
