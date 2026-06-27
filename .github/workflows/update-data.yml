@@ -18,7 +18,8 @@ jobs:
         with:
           node-version: 22
       - run: node fetch-data.js
-      - run: node -e "const d=require('./data.json'); require('fs').writeFileSync('data.js','var GAME_DATA = '+JSON.stringify(d)+';')"
+      - run: node -e "const d=require('./data.json'); require('fs').writeFileSync('data.js','GAME_DATA='+JSON.stringify(d))"
+      - run: npx terser data.js -o data.js --compress --mangle --toplevel 2>/dev/null
       - run: cp index.src.html index.html && sed -i "s/__DATA_VERSION__/$(date +%s)/g" index.html && npx staticrypt index.html -p "1337" --short -t password_template.html -d encrypted 2>/dev/null && cp encrypted/index.html . && rm -rf encrypted
       - run: |
           git config user.name "github-actions"
