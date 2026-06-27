@@ -8,26 +8,42 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0a0b;--surface:#141516;--border:#1e1f22;--border-hover:#2e2f34;--text:#e8e8ea;--text-dim:#7a7a85;--accent:#4f8cff;--accent-bg:rgba(79,140,255,0.1);--green:#34d399;--green-bg:rgba(52,211,153,0.1);--orange:#fbbf24;--orange-bg:rgba(251,191,36,0.1);--radius:10px}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:32px 16px;line-height:1.5;-webkit-font-smoothing:antialiased}
-.container{max-width:820px;margin:0 auto}
+.container{max-width:1100px;margin:0 auto}
 .nav{position:sticky;top:0;z-index:100;background:var(--bg);padding:12px 16px;margin:-32px -16px 12px;border-bottom:1px solid var(--border)}
 .nav .container{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .nav h1{font-size:1.2rem;font-weight:600;letter-spacing:-0.02em;white-space:nowrap}
 .nav .status{font-size:0.75rem;color:var(--text-dim);white-space:nowrap}
 .nav .search-wrap{flex:1;min-width:160px}
-#fetchDate{font-size:0.7rem;color:var(--text-dim);margin-bottom:12px;opacity:.65}
+#fetchDate{font-size:0.7rem;color:var(--text-dim);margin-bottom:8px;opacity:.65}
+.sort-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.sort-btn{font-size:0.72rem;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer}
+.sort-btn:hover{border-color:var(--border-hover);color:var(--text)}
+.sort-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.trending{margin-bottom:24px}
+.trending-scroll{display:flex;gap:12px;overflow-x:auto;padding:8px 0 12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.trending-scroll::-webkit-scrollbar{height:4px}
+.trending-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.trend-card{flex:0 0 auto;width:calc((100% - 84px)/8);min-width:120px;max-width:200px;scroll-snap-align:start;border-radius:var(--radius);overflow:hidden;cursor:pointer;position:relative;aspect-ratio:2/3;background:var(--surface);border:1px solid var(--border);transition:border-color .15s}
+@media(max-width:700px){.trend-card{min-width:100px;width:calc((100% - 36px)/4)}}
+@media(max-width:400px){.trend-card{width:calc((100% - 12px)/2)}}
+.trend-card:hover{border-color:var(--accent)}
+.trend-card img{width:100%;height:100%;object-fit:cover;display:block}
+.trend-card .overlay{position:absolute;bottom:0;left:0;right:0;padding:10px;background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:0.75rem;font-weight:500;line-height:1.3}
 #search{width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:16px;outline:none}
 #search:focus{border-color:var(--accent)}#search::placeholder{color:var(--text-dim)}
 .date-group{margin-bottom:24px}
 .date-header{font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
 .card:hover{border-color:var(--border-hover)}
-.card-title{font-size:0.95rem;font-weight:500;margin-bottom:8px;line-height:1.4}
-.card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;min-height:22px}
+.card-title{font-size:0.95rem;font-weight:500;line-height:1.4;flex:1;min-width:0}
+.card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:500;padding:2px 10px;border-radius:20px;white-space:nowrap}
 .badge-green{background:var(--green-bg);color:var(--green)}
 .badge-orange{background:var(--orange-bg);color:var(--orange)}
 .badge-dim{background:var(--border);color:var(--text-dim);font-style:italic}
-.card-links{display:flex;flex-wrap:wrap;gap:6px;min-height:28px}
+.card-links{display:flex;flex-wrap:wrap;gap:6px}
+@media(max-width:700px){.card{flex-wrap:wrap}.card-title{flex:1 1 100%}}
+@media(min-width:701px){.badge-green{order:2}.badge-orange{order:1}}
 .card-links a{display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;padding:5px 12px;border-radius:6px;text-decoration:none}
 .link-source{color:var(--accent);background:var(--accent-bg)}
 .link-source:hover{background:rgba(79,140,255,0.2)}
@@ -41,6 +57,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 @media(max-width:600px){body{padding:16px 12px}.nav{padding:10px 12px;margin:-16px -12px 12px}}
 </style>
+<script src="data.js"></script>
 </head>
 <body>
 <div id="loginScreen" style="display:flex;justify-content:center;align-items:center;min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -67,6 +84,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   </nav>
   <div class="container">
     <div id="fetchDate"></div>
+    <div id="trending"></div>
+    <div class="sort-bar">
+      <button class="sort-btn active" data-sort="date" onclick="setSort('date')">Date</button>
+      <button class="sort-btn" data-sort="name" onclick="setSort('name')">Name</button>
+      <button class="sort-btn" data-sort="size" onclick="setSort('size')">Size</button>
+    </div>
     <div id="results"></div>
     <div class="footer">This website does not host, upload, or distribute any files; it only aggregates links to third-party content and is not responsible for external sites or their materials.</div>
   </div>
@@ -100,6 +123,8 @@ function login() {
 
 const CACHE_KEY = 'pcgames_v4'
 const CACHE_TTL = 864e5 // 1 day
+let sortMode = 'date'
+let sortedLinks = []
 const PROXIES = [
   u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
@@ -109,7 +134,9 @@ const $ = s => document.querySelector(s)
 const statusEl = $('#statusText')
 const dateEl = $('#fetchDate')
 const resultsEl = $('#results')
+const trendingEl = $('#trending')
 const searchEl = $('#search')
+const TRENDING_COUNT = 8
 let allLinks = []
 
 if (getCookie(COOKIE_NAME) === PASSWORD) {
@@ -123,54 +150,129 @@ function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
 }
 
+function parseSize(s) {
+  if (!s) return 0
+  const m = s.match(/([\d.]+)\s*(GB|MB)/i)
+  if (!m) return 0
+  return parseFloat(m[1]) * (m[2].toUpperCase() === 'GB' ? 1024 : 1)
+}
+
+function setSort(mode) {
+  if (mode === sortMode && mode !== 'date') {
+    sortMode = mode === 'name' ? 'name-desc' : 'size-desc'
+  } else {
+    sortMode = mode
+  }
+  document.querySelectorAll('.sort-btn').forEach(b => {
+    const base = b.dataset.sort
+    b.classList.toggle('active', sortMode === base || sortMode === base + '-desc')
+  })
+  render()
+}
+
 function render() {
   const q = searchEl.value.trim().toLowerCase()
-  const filtered = q ? allLinks.filter(l => l.title.toLowerCase().includes(q)) : allLinks
+  let list = q ? allLinks.filter(l => l.title.toLowerCase().includes(q)) : allLinks
 
-  if (!filtered.length) {
+  if (sortMode === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title))
+  else if (sortMode === 'name-desc') list = [...list].sort((a, b) => b.title.localeCompare(a.title))
+  else if (sortMode === 'size') list = [...list].sort((a, b) => parseSize(a.filesize) - parseSize(b.filesize))
+  else if (sortMode === 'size-desc') list = [...list].sort((a, b) => parseSize(b.filesize) - parseSize(a.filesize))
+
+  if (!list.length) {
     resultsEl.innerHTML = '<div class="empty">No games found</div>'
     return
   }
 
-  const groups = {}
-  for (const l of filtered) {
-    const d = l.date || 'Unknown'
-    if (!groups[d]) groups[d] = []
-    groups[d].push(l)
+  if (sortMode === 'date') {
+    const groups = {}
+    for (const l of list) {
+      const d = l.date || 'Unknown'
+      if (!groups[d]) groups[d] = []
+      groups[d].push(l)
+    }
+    const sortedDates = Object.keys(groups).sort((a, b) => {
+      const [d1,m1,y1] = a.split('.').map(Number)
+      const [d2,m2,y2] = b.split('.').map(Number)
+      return new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1)
+    })
+    resultsEl.innerHTML = sortedDates.map(date => `
+      <div class="date-group">
+        <div class="date-header">${esc(date)}</div>
+        ${groups[date].map(link => `
+          <div class="card" id="game-${esc(link.url)}">
+            <div class="card-title">${esc(link.title)}</div>
+            <div class="card-meta">
+              ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
+              ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
+            </div>
+            <div class="card-links">
+              <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
+              ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
+              ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')
+  } else {
+    resultsEl.innerHTML = list.map(link => `
+      <div class="card" id="game-${esc(link.url)}">
+        <div class="card-title">${esc(link.title)}</div>
+        <div class="card-meta">
+          ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
+          ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
+        </div>
+        <div class="card-links">
+          <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
+          ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
+          ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
+        </div>
+      </div>
+    `).join('')
+  }
+}
+
+async function renderTrending() {
+  const sorted = [...allLinks].sort((a, b) => {
+    const [d1,m1,y1] = (a.date || '01.01.2020').split('.').map(Number)
+    const [d2,m2,y2] = (b.date || '01.01.2020').split('.').map(Number)
+    return (new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1)) || (b.updated ? 1 : 0) - (a.updated ? 1 : 0)
+  })
+  const trending = sorted.slice(0, TRENDING_COUNT)
+
+  // Fetch covers on-demand for any that are missing
+  for (const link of trending) {
+    if (link.cover) continue
+    try {
+      const html = await tryProxies(link.url)
+      const m = html.match(/<img\s+src="([^"]+)"/i)
+      if (m) link.cover = m[1]
+    } catch {}
   }
 
-  const sorted = Object.keys(groups).sort((a, b) => {
-    const [d1,m1,y1] = a.split('.').map(Number)
-    const [d2,m2,y2] = b.split('.').map(Number)
-    return new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1)
-  })
-
-  resultsEl.innerHTML = sorted.map(date => `
-    <div class="date-group">
-      <div class="date-header">${esc(date)}</div>
-      ${groups[date].map(link => `
-        <div class="card">
-          <div class="card-title">${esc(link.title)}</div>
-          <div class="card-meta">
-            ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
-            ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
+  trendingEl.innerHTML = `
+    <div class="trending">
+      <div class="date-header">Trending</div>
+      <div class="trending-scroll">
+        ${trending.map(link => `
+          <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
+            <img src="${esc(link.cover || '')}" alt="" loading="lazy" onerror="this.style.display='none'">
           </div>
-          <div class="card-links">
-            <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
-            ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
-            ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
-          </div>
-        </div>
-      `).join('')}
+        `).join('')}
+      </div>
     </div>
-  `).join('')
+  `
 }
 
 searchEl.addEventListener('input', render)
 
-function setData(links, fetched) {
+async function setData(links, fetched) {
   allLinks = links
+  sortMode = 'date'
+  document.querySelector('.sort-btn[data-sort="date"]')?.classList.add('active')
   render()
+  await renderTrending()
   statusEl.textContent = `${links.length} games`
   if (fetched) {
     const d = new Date(fetched)
@@ -272,9 +374,15 @@ async function liveFetch() {
 async function main() {
   statusEl.textContent = 'Loading...'
 
-  // Show inline data immediately (always available)
-  if (INLINE_DATA?.links?.length) {
-    setData(INLINE_DATA.links, INLINE_DATA.fetched)
+  // 0. Load from data.js script tag (full dataset with covers, works locally)
+  const hasGameData = typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length
+  if (hasGameData) {
+    await setData(GAME_DATA.links, GAME_DATA.fetched)
+  }
+
+  // Show inline data immediately (fallback if data.js not loaded)
+  if (!hasGameData && INLINE_DATA?.links?.length) {
+    await setData(INLINE_DATA.links, INLINE_DATA.fetched)
   }
 
   // 1. Try localStorage cache (faster than fetch)
@@ -283,7 +391,7 @@ async function main() {
     if (raw) {
       const { data, timestamp } = JSON.parse(raw)
       if (Date.now() - timestamp < CACHE_TTL && data) {
-        setData(data.links || data, data.fetched || timestamp)
+        await setData(data.links || data, data.fetched || timestamp)
       }
     }
   } catch {}
@@ -297,7 +405,7 @@ async function main() {
     if (res.ok) {
       const fresh = await res.json()
       if (fresh.links?.length) {
-        setData(fresh.links, fresh.fetched)
+        await setData(fresh.links, fresh.fetched)
         localStorage.setItem(CACHE_KEY, JSON.stringify({ data: fresh.links, timestamp: fresh.fetched || Date.now() }))
         return
       }

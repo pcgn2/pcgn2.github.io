@@ -66,7 +66,11 @@ function crawlMainPage(html) {
 function parseDeepPage(body) {
   const sizeMatch = body.match(SIZE_RE);
   const filesize = sizeMatch ? `${sizeMatch[1]} ${sizeMatch[2].toUpperCase()}` : null;
-  let rapidgator = null, youtube = null;
+  let rapidgator = null, youtube = null, cover = null;
+
+  // Cover image
+  const imgMatch = body.match(/<img\s+src="([^"]+)"/i);
+  if (imgMatch) cover = imgMatch[1];
 
   // YouTube: look for standalone youtube URLs
   const ytMatch = body.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
@@ -90,7 +94,7 @@ function parseDeepPage(body) {
     if (rgMatch) rapidgator = rgMatch[0];
   }
 
-  return { filesize, rapidgator, youtube };
+  return { filesize, rapidgator, youtube, cover };
 }
 
 async function main() {
@@ -115,11 +119,12 @@ async function main() {
     const url = links[i].url;
     const cached = cache[url];
 
-    if (cached && cached.filesize && cached.rapidgator && !links[i].updated) {
+    if (cached && cached.filesize && cached.rapidgator && cached.cover && !links[i].updated) {
       // Reuse cached data (skip deep crawl unless marked as updated)
       links[i].filesize = cached.filesize;
       links[i].rapidgator = cached.rapidgator;
       links[i].youtube = cached.youtube;
+      links[i].cover = cached.cover;
       skipped++;
       continue;
     }
@@ -129,6 +134,7 @@ async function main() {
     links[i].filesize = deep.filesize;
     links[i].rapidgator = deep.rapidgator;
     links[i].youtube = deep.youtube;
+    links[i].cover = deep.cover;
     // Rate-limit to be gentle
     await new Promise(r => setTimeout(r, 200));
   }
