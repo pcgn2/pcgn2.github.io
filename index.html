@@ -236,42 +236,45 @@ function render() {
 
 async function renderTrending() {
   const TRENDING_URLS_KEY = 'pcgames_trending_urls'
+  const TRENDING_TITLES_KEY = 'pcgames_trending_titles'
 
-  // Get trending URLs from cache or fetch main page
-  let trendingUrls = []
-  try { trendingUrls = JSON.parse(localStorage.getItem(TRENDING_URLS_KEY) || '[]') } catch {}
+  // Get trending data from cache or fetch main page
+  let trendingData = []
+  try { trendingData = JSON.parse(localStorage.getItem(TRENDING_URLS_KEY) || '[]') } catch {}
 
-  if (!trendingUrls.length) {
+  if (!trendingData.length) {
     const html = await tryProxies('https://elamigos.site')
     const navIx = html.indexOf('fixed-nav-bar')
     if (navIx > 0) {
       const after = html.slice(navIx)
       let count = 0
       for (const line of after.split('\n')) {
-        const h3 = line.match(/<(h3|h5)[^>]*>(.*?)<\/\1>/i)
-        if (h3) {
-          const a = h3[2].match(/<a\s+href="([^"]+\.html)"[^>]*>/i)
-          if (a) {
-            trendingUrls.push(new URL(a[1], 'https://elamigos.site').href)
-            count++
-            if (count >= TRENDING_COUNT) break
-          }
+        const imgA = line.match(/<a\s+href="([^"]+\.html)"[^>]*>\s*<img\s+src="[^"]+"[^>]*>\s*<\/a>/i)
+        if (imgA) {
+          const url = new URL(imgA[1], 'https://elamigos.site').href
+          let title = ''
+          try {
+            const deepHtml = await tryProxies(url)
+            const tm = deepHtml.match(/<title>(.*?)<\/title>/i)
+            if (tm) title = tm[1].replace(/\s*-\s*ElAmigos official site\s*/i, '').trim()
+          } catch {}
+          if (!title) title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim()
+          trendingData.push({ url, title })
+          count++
+          if (count >= TRENDING_COUNT) break
         }
       }
     }
-    try { localStorage.setItem(TRENDING_URLS_KEY, JSON.stringify(trendingUrls)) } catch {}
+    try { localStorage.setItem(TRENDING_URLS_KEY, JSON.stringify(trendingData)) } catch {}
   }
 
-  // Match against allLinks preserving page order
-  const urlSet = new Set(trendingUrls)
-  const trending = []
-  for (const link of allLinks) {
-    if (urlSet.has(link.url)) {
-      trending.push(link)
-      urlSet.delete(link.url)
-      if (trending.length >= TRENDING_COUNT) break
-    }
-  }
+  // Merge with allLinks data (filesize, rapidgator, youtube, date)
+  const urlIndex = {}
+  for (const link of allLinks) urlIndex[link.url] = link
+  const trending = trendingData.map(d => {
+    const match = urlIndex[d.url]
+    return match ? { ...match, trendingTitle: d.title } : { url: d.url, title: d.title, trendingTitle: d.title, date: '', filesize: '', rapidgator: '', youtube: '' }
+  }).slice(0, TRENDING_COUNT)
 
   // Load cached covers from localStorage
   let coverCache = {}
@@ -301,6 +304,7 @@ async function renderTrending() {
         ${trending.map(link => `
           <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
             <img src="${esc(link.cover || '')}" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="overlay">${esc(link.trendingTitle || link.title)}</div>
           </div>
         `).join('')}
       </div>
