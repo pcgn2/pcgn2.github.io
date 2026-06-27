@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PC Games</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0b;--surface:#141516;--border:#1e1f22;--border-hover:#2e2f34;--text:#e8e8ea;--text-dim:#7a7a85;--accent:#4f8cff;--accent-bg:rgba(79,140,255,0.1);--green:#34d399;--green-bg:rgba(52,211,153,0.1);--orange:#fbbf24;--orange-bg:rgba(251,191,36,0.1);--radius:10px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:32px 16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.container{max-width:1100px;margin:0 auto}
+.nav{position:sticky;top:0;z-index:100;background:var(--bg);padding:12px 16px;margin:-32px -16px 12px;border-bottom:1px solid var(--border)}
+.nav .container{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.nav h1{font-size:1.2rem;font-weight:600;letter-spacing:-0.02em;white-space:nowrap}
+.nav .status{font-size:0.75rem;color:var(--text-dim);white-space:nowrap}
+.nav .search-wrap{flex:1;min-width:160px}
+#fetchDate{font-size:0.7rem;color:var(--text-dim);margin-bottom:8px;opacity:.65}
+.sort-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.sort-btn{font-size:0.72rem;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer}
+.sort-btn:hover{border-color:var(--border-hover);color:var(--text)}
+.sort-btn.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.trending{margin-bottom:24px}
+.trending-scroll{display:flex;gap:12px;overflow-x:auto;padding:8px 0 12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.trending-scroll::-webkit-scrollbar{height:4px}
+.trending-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.trend-card{flex:0 0 auto;width:calc((100% - 84px)/8);min-width:120px;max-width:200px;scroll-snap-align:start;border-radius:var(--radius);overflow:hidden;cursor:pointer;position:relative;aspect-ratio:2/3;background:var(--surface);border:1px solid var(--border);transition:border-color .15s}
+@media(max-width:700px){.trend-card{min-width:100px;width:calc((100% - 36px)/4)}}
+@media(max-width:400px){.trend-card{width:calc((100% - 12px)/2)}}
+.trend-card:hover{border-color:var(--accent)}
+.trend-card img{width:100%;height:100%;object-fit:cover;display:block}
+.trend-card .overlay{position:absolute;bottom:0;left:0;right:0;padding:10px;background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:0.75rem;font-weight:500;line-height:1.3}
+#search{width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:16px;outline:none}
+#search:focus{border-color:var(--accent)}#search::placeholder{color:var(--text-dim)}
+.date-group{margin-bottom:24px}
+.date-header{font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.card:hover{border-color:var(--border-hover)}
+.card-title{font-size:0.95rem;font-weight:500;line-height:1.4;flex:1;min-width:0}
+.card-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:0.72rem;font-weight:500;padding:2px 10px;border-radius:20px;white-space:nowrap}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-orange{background:var(--orange-bg);color:var(--orange)}
+.badge-dim{background:var(--border);color:var(--text-dim);font-style:italic}
+.card-links{display:flex;flex-wrap:wrap;gap:6px}
+@media(max-width:700px){.card{flex-wrap:wrap}.card-title{flex:1 1 100%}}
+@media(min-width:701px){.badge-green{order:2}.badge-orange{order:1}}
+.card-links a{display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;padding:5px 12px;border-radius:6px;text-decoration:none}
+.link-source{color:var(--accent);background:var(--accent-bg)}
+.link-source:hover{background:rgba(79,140,255,0.2)}
+.link-target{color:var(--green);background:var(--green-bg)}
+.link-target:hover{background:rgba(52,211,153,0.2)}
+.link-trailer{color:var(--orange);background:var(--orange-bg)}
+.link-trailer:hover{background:rgba(251,191,36,0.2)}
+.empty{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:0.9rem;line-height:1.8}
+.empty code{background:var(--surface);padding:2px 8px;border-radius:4px;font-size:0.85rem}
+.footer{margin-top:40px;padding:20px 0 10px;text-align:center;font-size:0.7rem;color:var(--text-dim);opacity:.5;line-height:1.5;border-top:1px solid var(--border)}
+
+#scrollTop{position:fixed;bottom:32px;right:32px;z-index:200;width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:1.1rem;cursor:pointer;display:none;align-items:center;justify-content:center;transition:opacity .2s,border-color .2s;opacity:0}
+#scrollTop.show{display:flex;opacity:1}
+#scrollTop:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:700px){#scrollTop{display:none!important}}
+@media(max-width:600px){body{padding:16px 12px}.nav{padding:10px 12px;margin:-16px -12px 12px}}
+</style>
+<script src="data.js"></script>
+</head>
+<body>
+<div id="loginScreen" style="display:flex;justify-content:center;align-items:center;min-height:100vh;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="text-align:center;">
+    <h1 style="font-size:1.5rem;font-weight:600;margin-bottom:20px;">PC Games</h1>
+    <input type="password" id="passInput" placeholder="Password" autofocus
+      style="padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:1rem;outline:none;width:220px;"
+      onkeydown="if(event.key==='Enter')login()">
+    <br>
+    <button onclick="login()" style="margin-top:12px;padding:12px 32px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;">Enter</button>
+    <p id="loginError" style="color:#ef4444;font-size:0.85rem;margin-top:10px;display:none;">Wrong password</p>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <nav class="nav">
+    <div class="container">
+      <h1>PC Games</h1>
+      <div class="search-wrap">
+        <input id="search" type="text" placeholder="Search..." autocomplete="off">
+      </div>
+      <div class="status" id="statusText" style="display:none">Loading...</div>
+    </div>
+  </nav>
+  <div class="container">
+    <div id="fetchDate"></div>
+    <div id="trending"></div>
+    <div class="sort-bar">
+      <button class="sort-btn active" data-sort="date" onclick="setSort('date')">Date</button>
+      <button class="sort-btn" data-sort="name" onclick="setSort('name')">Name</button>
+      <button class="sort-btn" data-sort="size" onclick="setSort('size')">Size</button>
+    </div>
+    <div id="results"></div>
+    <div class="footer">This website does not host, upload, or distribute any files; it only aggregates links to third-party content and is not responsible for external sites or their materials.</div>
+  </div>
+</div>
+<button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top">↑</button>
+
+<script>
+
+const PASSWORD = '1337'
+const COOKIE_NAME = 'pcgames_auth'
+
+function setCookie(name, val, days) {
+  const d = new Date(Date.now() + days * 864e5)
+  document.cookie = name + '=' + val + '; expires=' + d.toUTCString() + '; path=/'
+}
+
+function getCookie(name) {
+  return document.cookie.match('(^|; )' + name + '=([^;]*)')?.[2]
+}
+
+function login() {
+  const val = document.getElementById('passInput').value
+  if (val === PASSWORD) {
+    setCookie(COOKIE_NAME, val, 180)
+    document.getElementById('loginScreen').style.display = 'none'
+    document.getElementById('app').style.display = 'block'
+    main()
+  } else {
+    document.getElementById('loginError').style.display = 'block'
+  }
+}
+
+const CACHE_KEY = 'pcgames_v4'
+const CACHE_TTL = 864e5 // 1 day
+let sortMode = 'date'
+let sortedLinks = []
+const PROXIES = [
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+]
+
+const $ = s => document.querySelector(s)
+const statusEl = $('#statusText')
+const dateEl = $('#fetchDate')
+const resultsEl = $('#results')
+const trendingEl = $('#trending')
+const searchEl = $('#search')
+const TRENDING_COUNT = 8
+const COVER_CACHE_KEY = 'pcgames_covers'
+let allLinks = []
+
+if (getCookie(COOKIE_NAME) === PASSWORD) {
+  document.getElementById('loginScreen').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+  main()
+}
+
+function esc(s) {
+  if (!s) return ''
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+function parseSize(s) {
+  if (!s) return 0
+  const m = s.match(/([\d.]+)\s*(GB|MB)/i)
+  if (!m) return 0
+  return parseFloat(m[1]) * (m[2].toUpperCase() === 'GB' ? 1024 : 1)
+}
+
+function setSort(mode) {
+  if (mode === sortMode && mode !== 'date') {
+    sortMode = mode === 'name' ? 'name-desc' : 'size-desc'
+  } else {
+    sortMode = mode
+  }
+  document.querySelectorAll('.sort-btn').forEach(b => {
+    const base = b.dataset.sort
+    b.classList.toggle('active', sortMode === base || sortMode === base + '-desc')
+  })
+  render()
+}
+
+function render() {
+  const q = searchEl.value.trim().toLowerCase()
+  let list = q ? allLinks.filter(l => l.title.toLowerCase().includes(q)) : allLinks
+
+  if (sortMode === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title))
+  else if (sortMode === 'name-desc') list = [...list].sort((a, b) => b.title.localeCompare(a.title))
+  else if (sortMode === 'size') list = [...list].sort((a, b) => parseSize(a.filesize) - parseSize(b.filesize))
+  else if (sortMode === 'size-desc') list = [...list].sort((a, b) => parseSize(b.filesize) - parseSize(a.filesize))
+
+  if (!list.length) {
+    resultsEl.innerHTML = '<div class="empty">No games found</div>'
+    return
+  }
+
+  if (sortMode === 'date') {
+    const groups = {}
+    for (const l of list) {
+      const d = l.date || 'Unknown'
+      if (!groups[d]) groups[d] = []
+      groups[d].push(l)
+    }
+    const sortedDates = Object.keys(groups).sort((a, b) => {
+      const [d1,m1,y1] = a.split('.').map(Number)
+      const [d2,m2,y2] = b.split('.').map(Number)
+      return new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1)
+    })
+    resultsEl.innerHTML = sortedDates.map(date => `
+      <div class="date-group">
+        <div class="date-header">${esc(date)}</div>
+        ${groups[date].map(link => `
+          <div class="card" id="game-${esc(link.url)}">
+            <div class="card-title">${esc(link.title)}</div>
+            <div class="card-meta">
+              ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
+              ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
+            </div>
+            <div class="card-links">
+              <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
+              ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
+              ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('')
+  } else {
+    resultsEl.innerHTML = list.map(link => `
+      <div class="card" id="game-${esc(link.url)}">
+        <div class="card-title">${esc(link.title)}</div>
+        <div class="card-meta">
+          ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
+          ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
+        </div>
+        <div class="card-links">
+          <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
+          ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
+          ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
+        </div>
+      </div>
+    `).join('')
+  }
+}
+
+async function renderTrending() {
+  const TRENDING_CACHE_KEY = 'pcgames_trending_v3'
+
+  let trendingData = []
+  try { trendingData = JSON.parse(localStorage.getItem(TRENDING_CACHE_KEY) || '[]') } catch {}
+
+  if (!trendingData.length) {
+    const html = await tryProxies('https://elamigos.site')
+    let count = 0
+    const re = /href="(data\/[^"]+\.html)"/gi
+    let m
+    while ((m = re.exec(html)) !== null) {
+      const url = new URL(m[1], 'https://elamigos.site').href
+      let title = ''
+      try {
+        const deepHtml = await tryProxies(url)
+        const tm = deepHtml.match(/<title>(.*?)<\/title>/i)
+        if (tm) title = tm[1].replace(/\s*-\s*ElAmigos official site\s*/i, '').trim()
+      } catch {}
+      if (!title) title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim()
+      trendingData.push({ url, title })
+      count++
+      if (count >= TRENDING_COUNT) break
+    }
+    try { localStorage.setItem(TRENDING_CACHE_KEY, JSON.stringify(trendingData)) } catch {}
+  }
+
+  const urlIndex = {}
+  for (const link of allLinks) urlIndex[link.url] = link
+  const trending = trendingData.map(d => {
+    const match = urlIndex[d.url]
+    return match ? { ...match, trendingTitle: d.title } : { url: d.url, title: d.title, trendingTitle: d.title, date: '', filesize: '', rapidgator: '', youtube: '' }
+  }).slice(0, TRENDING_COUNT)
+
+  let coverCache = {}
+  try { coverCache = JSON.parse(localStorage.getItem(COVER_CACHE_KEY) || '{}') } catch {}
+
+  for (const link of trending) {
+    if (link.cover) continue
+    if (coverCache[link.url]) { link.cover = coverCache[link.url]; continue }
+    try {
+      const deepHtml = await tryProxies(link.url)
+      const img = deepHtml.match(/<img\s+src="([^"]+)"/i)
+      if (img) {
+        link.cover = img[1]
+        coverCache[link.url] = img[1]
+      }
+    } catch {}
+  }
+
+  try { localStorage.setItem(COVER_CACHE_KEY, JSON.stringify(coverCache)) } catch {}
+
+  trendingEl.innerHTML = `
+    <div class="trending">
+      <div class="date-header">Trending</div>
+      <div class="trending-scroll">
+        ${trending.map(link => `
+          <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
+            <img src="${esc(link.cover || '')}" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="overlay">${esc(link.trendingTitle || link.title)}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `
+}
+
+searchEl.addEventListener('input', render)
+
+async function setData(links, fetched) {
+  allLinks = links
+  sortMode = 'date'
+  document.querySelector('.sort-btn[data-sort="date"]')?.classList.add('active')
+  render()
+  await renderTrending()
+  statusEl.textContent = `${links.length} games`
+  if (fetched) {
+    const d = new Date(fetched)
+    dateEl.textContent = `Updated ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
+  }
+}
+
+async function tryProxies(url) {
+  for (let i = 0; i < PROXIES.length; i++) {
+    try {
+      statusEl.textContent = `Trying proxy ${i + 1}/${PROXIES.length}...`
+      const res = await fetch(PROXIES[i](url), { signal: AbortSignal.timeout(15000) })
+      if (!res.ok) continue
+      return await res.text()
+    } catch {}
+  }
+  throw new Error('All proxies failed')
+}
+
+function parseLinks(html) {
+  const sections = {}
+  let currentDate = null
+  for (const line of html.split('\n')) {
+    const h1 = line.match(/<h1[^>]*>(.*?)<\/h1>/i)
+    if (h1) {
+      const dmy = h1[1].match(/(\d{2})\.(\d{2})\.(\d{4})/)
+      if (dmy) { currentDate = `${dmy[1]}.${dmy[2]}.${dmy[3]}`; sections[currentDate] = [] }
+      continue
+    }
+    if (!currentDate) continue
+    const h3 = line.match(/<(h3|h5)[^>]*>(.*?)<\/\1>/i)
+    if (h3) {
+      const a = h3[2].match(/<a\s+href="([^"]+\.html)"[^>]*>/i)
+      if (a) {
+        const url = new URL(a[1], 'https://elamigos.site').href
+        const title = h3[2].replace(/<[^>]+>/g, '').replace(/DOWNLOAD|ElAmigos|Repack|Update/gi, '').trim()
+        if (!sections[currentDate].some(l => l.url === url)) {
+          sections[currentDate].push({ url, title, date: currentDate, updated: h3[1].toLowerCase() === 'h5' })
+        }
+      }
+    }
+  }
+  const sorted = Object.keys(sections).sort((a, b) => {
+    const [d1,m1,y1] = a.split('.').map(Number)
+    const [d2,m2,y2] = b.split('.').map(Number)
+    return new Date(y2,m2-1,d2) - new Date(y1,m1-1,d1)
+  })
+  const links = []
+  for (const date of sorted) links.push(...sections[date])
+  return links
+}
+
+function parseDeepPage(body) {
+  const sz = body.match(/(\d+(?:\.\d+)?)\s*(GB|MB)/i)
+  const filesize = sz ? `${sz[1]} ${sz[2].toUpperCase()}` : null
+  const yt = body.match(/https?:\/\/(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/)
+  const youtube = yt ? yt[0] : null
+
+  // First link after <h2>RAPIDGATOR</h2>
+  let rapidgator = null
+  const lines = body.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (/<h2[^>]*>RAPIDGATOR<\/h2>/i.test(lines[i])) {
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        const m = lines[j].match(/href="([^"]+\.html)"/i)
+        if (m) { rapidgator = new URL(m[1], 'https://elamigos.site').href; break }
+      }
+      if (rapidgator) break
+    }
+  }
+
+  // Fallback to any filecrypt link
+  if (!rapidgator) {
+    const rg = body.match(/https?:\/\/filecrypt\.cc\/Container\/[^"'\s<>]+/)
+    rapidgator = rg ? rg[0] : null
+  }
+
+  return { filesize, youtube, rapidgator }
+}
+
+async function liveFetch() {
+  statusEl.textContent = 'Fetching...'
+  const html = await tryProxies('https://elamigos.site')
+  const links = parseLinks(html)
+
+  for (let i = 0; i < links.length; i++) {
+    statusEl.textContent = `Deep ${i + 1}/${links.length}...`
+    try {
+      const deepHtml = await tryProxies(links[i].url)
+      Object.assign(links[i], parseDeepPage(deepHtml))
+    } catch {}
+  }
+
+  const payload = { links, fetched: Date.now() }
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(payload)) } catch {}
+  setData(links, Date.now())
+}
+
+async function main() {
+  statusEl.textContent = 'Loading...'
+
+  // 0. Load from data.js script tag (full dataset with covers, works locally)
+  const hasGameData = typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length
+  if (hasGameData) {
+    await setData(GAME_DATA.links, GAME_DATA.fetched)
+  }
+
+
+  // 1. Try localStorage cache (faster than fetch)
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (raw) {
+      const { data, timestamp } = JSON.parse(raw)
+      if (Date.now() - timestamp < CACHE_TTL && data) {
+        await setData(data.links || data, data.fetched || timestamp)
+      }
+    }
+  } catch {}
+
+  // 2. Try fetching fresh data.json (GitHub Pages)
+  try {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 5000)
+    const res = await fetch('data.json', { signal: ctrl.signal })
+    clearTimeout(timer)
+    if (res.ok) {
+      const fresh = await res.json()
+      if (fresh.links?.length) {
+        await setData(fresh.links, fresh.fetched)
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ data: fresh.links, timestamp: fresh.fetched || Date.now() }))
+        return
+      }
+    }
+  } catch (e) { console.warn('data.json:', e.message) }
+
+  // 3. Fallback if nothing loaded
+  if (!allLinks.length) {
+    try { await liveFetch() } catch {}
+    if (!allLinks.length) {
+      statusEl.textContent = 'No data'
+      resultsEl.innerHTML = '<div class="empty">No game data available.</div>'
+    }
+  }
+}
+
+const scrollBtn = document.getElementById('scrollTop')
+let scrollTimer
+window.addEventListener('scroll', () => {
+  clearTimeout(scrollTimer)
+  scrollBtn.classList.toggle('show', window.scrollY > 600)
+  scrollTimer = setTimeout(() => scrollBtn.classList.remove('show'), 3000)
+}, { passive: true })
+
+</script>
+</body>
+</html>
