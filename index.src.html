@@ -357,12 +357,38 @@ async function liveFetch() {
   setData(links, Date.now())
 }
 
+async function tryLoadDataJS() {
+  try {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script')
+      s.src = 'data.js?t=__DATA_VERSION__'
+      s.onload = resolve
+      s.onerror = reject
+      document.head.appendChild(s)
+    })
+    if (typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length) {
+      await setData(GAME_DATA.links, GAME_DATA.fetched, GAME_DATA.trending)
+      return true
+    }
+  } catch {}
+  return false
+}
+
 async function main() {
   statusEl.textContent = 'Loading...'
 
-  // file:// protocol: data.js is the only data source (fetch doesn't work locally)
-  if (location.protocol === 'file:') {
-    if (await tryLoadDataJS()) return
+  // Try data.js first — works on both file:// and GitHub Pages
+  if (await tryLoadDataJS()) {
+    // Silently refresh cache from data.json in background
+    try {
+      const res = await fetch('data.json?t=__DATA_VERSION__', { signal: AbortSignal.timeout(15000) })
+      if (res.ok) {
+        const fresh = await res.json()
+        if (fresh.links?.length)
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ data: fresh.links, trending: fresh.trending, timestamp: fresh.fetched || Date.now() }))
+      }
+    } catch {}
+    return
   }
 
   // Try localStorage cache (faster than fetch)
@@ -379,7 +405,7 @@ async function main() {
 
   // Try fetching fresh data.json (GitHub Pages)
   try {
-    const res = await fetch('data.json?t=__DATA_VERSION__')
+    const res = await fetch('data.json?t=__DATA_VERSION__', { signal: AbortSignal.timeout(20000) })
     if (res.ok) {
       const fresh = await res.json()
       if (fresh.links?.length) {
@@ -390,9 +416,6 @@ async function main() {
     }
   } catch (e) { console.warn('data.json:', e.message) }
 
-  // Fallback: try data.js (works on both GitHub Pages and locally)
-  if (await tryLoadDataJS()) return
-
   // Last resort: live fetch via proxies
   if (!allLinks.length) {
     try { await liveFetch() } catch {}
@@ -401,23 +424,6 @@ async function main() {
       resultsEl.innerHTML = '<div class="empty">No game data available.</div>'
     }
   }
-}
-
-async function tryLoadDataJS() {
-  try {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement('script')
-      s.src = 'data.js?t=__DATA_VERSION__'
-      s.onload = resolve
-      s.onerror = reject
-      document.head.appendChild(s)
-    })
-    if (typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length) {
-      await setData(GAME_DATA.links, GAME_DATA.fetched, GAME_DATA.trending)
-      return true
-    }
-  } catch {}
-  return false
 }
 
 const scrollBtn = document.getElementById('scrollTop')
