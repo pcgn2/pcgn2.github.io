@@ -192,11 +192,28 @@ function render() {
   }
 }
 
-function coverUrl(u) {
-  if (!u) return ''
-  if (u.includes('fastpic.org'))
-    return `https://images.weserv.nl/?url=${encodeURIComponent(u)}&output=webp&q=80`
-  return u
+function toWebP(src) {
+  return new Promise(resolve => {
+    if (!src) return resolve('')
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas')
+        c.width = img.naturalWidth
+        c.height = img.naturalHeight
+        c.getContext('2d').drawImage(img, 0, 0)
+        c.toBlob(b => resolve(b ? URL.createObjectURL(b) : src), 'image/webp', 0.8)
+      } catch { resolve(src) }
+    }
+    img.onerror = () => {
+      const img2 = new Image()
+      img2.onload = () => resolve(src)
+      img2.onerror = () => resolve(src)
+      img2.src = src
+    }
+    img.src = src
+  })
 }
 
 async function renderTrending() {
@@ -207,12 +224,17 @@ async function renderTrending() {
       <div class="trending-scroll">
         ${list.map(link => `
           <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
-            <img src="${esc(coverUrl(link.cover))}" alt="" loading="lazy" onerror="this.src='${esc(link.cover || '')}';this.onerror=null">
+            <img data-src="${esc(link.cover || '')}" alt="" loading="lazy">
           </div>
         `).join('')}
       </div>
     </div>
   `
+  const imgs = trendingEl.querySelectorAll('img[data-src]')
+  await Promise.all([...imgs].map(async img => {
+    const src = img.dataset.src
+    img.src = await toWebP(src)
+  }))
 }
 
 searchEl.addEventListener('input', render)
