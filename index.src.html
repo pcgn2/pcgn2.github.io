@@ -192,24 +192,6 @@ function render() {
   }
 }
 
-function toWebP(src) {
-  return new Promise(resolve => {
-    if (!src) return resolve('')
-    const img = new Image()
-    img.onload = () => {
-      try {
-        const c = document.createElement('canvas')
-        c.width = img.naturalWidth
-        c.height = img.naturalHeight
-        c.getContext('2d').drawImage(img, 0, 0)
-        c.toBlob(b => resolve(b ? URL.createObjectURL(b) : src), 'image/webp', 0.8)
-      } catch { resolve(src) }
-    }
-    img.onerror = () => resolve(src)
-    img.src = src
-  })
-}
-
 async function renderTrending() {
   const list = trendingData.slice(0, TRENDING_COUNT)
   trendingEl.innerHTML = `
@@ -227,7 +209,14 @@ async function renderTrending() {
   const imgs = trendingEl.querySelectorAll('img[data-src]')
   await Promise.all([...imgs].map(async img => {
     const src = img.dataset.src
-    img.src = await toWebP(src)
+    img.src = src
+    try {
+      const c = document.createElement('canvas')
+      c.width = img.naturalWidth
+      c.height = img.naturalHeight
+      c.getContext('2d').drawImage(img, 0, 0)
+      c.toBlob(b => { if (b) img.src = URL.createObjectURL(b) }, 'image/webp', 0.8)
+    } catch {}
   }))
 }
 
