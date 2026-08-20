@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'none'; font-src 'self'">
 <title>PC Games</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -95,6 +96,7 @@ let sortMode = 'date'
 let sortedLinks = []
 
 const $ = s => document.querySelector(s)
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms) } }
 const statusEl = $('#statusText')
 const dateEl = $('#fetchDate')
 const resultsEl = $('#results')
@@ -106,7 +108,7 @@ let trendingData = []
 
 function esc(s) {
   if (!s) return ''
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
 }
 
 function parseSize(s) {
@@ -122,11 +124,32 @@ function setSort(mode) {
   } else {
     sortMode = mode
   }
+  const labels = { date: 'Date', name: 'Name', 'name-desc': 'Name', size: 'Size', 'size-desc': 'Size' }
+  const arrows = { date: '', name: ' ▲', 'name-desc': ' ▼', size: ' ▲', 'size-desc': ' ▼' }
   document.querySelectorAll('.sort-btn').forEach(b => {
     const base = b.dataset.sort
-    b.classList.toggle('active', sortMode === base || sortMode === base + '-desc')
+    const active = sortMode === base || sortMode === base + '-desc'
+    b.classList.toggle('active', active)
+    b.textContent = labels[sortMode === base || sortMode === base + '-desc' ? sortMode : base] + (active ? arrows[sortMode] : '')
   })
   render()
+}
+
+function renderCard(link) {
+  return `
+    <div class="card" id="game-${esc(link.url)}">
+      <div class="card-title">${esc(link.title)}</div>
+      <div class="card-meta">
+        ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
+        ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
+      </div>
+      <div class="card-links">
+        <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
+        ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
+        ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
+      </div>
+    </div>
+  `
 }
 
 function render() {
@@ -135,11 +158,13 @@ function render() {
 
   if (sortMode === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title))
   else if (sortMode === 'name-desc') list = [...list].sort((a, b) => b.title.localeCompare(a.title))
-  else if (sortMode === 'size') list = [...list].sort((a, b) => parseSize(a.filesize) - parseSize(b.filesize))
-  else if (sortMode === 'size-desc') list = [...list].sort((a, b) => parseSize(b.filesize) - parseSize(a.filesize))
+  else if (sortMode === 'size') list = [...list].sort((a, b) => a._parsedSize - b._parsedSize)
+  else if (sortMode === 'size-desc') list = [...list].sort((a, b) => b._parsedSize - a._parsedSize)
 
   if (!list.length) {
-    resultsEl.innerHTML = '<div class="empty">No games found</div>'
+    resultsEl.innerHTML = q
+      ? `<div class="empty">No games match "${esc(q)}" — try a different search</div>`
+      : '<div class="empty">No games found</div>'
     return
   }
 
@@ -158,37 +183,11 @@ function render() {
     resultsEl.innerHTML = sortedDates.map(date => `
       <div class="date-group">
         <div class="date-header">${esc(date)}</div>
-        ${groups[date].map(link => `
-          <div class="card" id="game-${esc(link.url)}">
-            <div class="card-title">${esc(link.title)}</div>
-            <div class="card-meta">
-              ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
-              ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
-            </div>
-            <div class="card-links">
-              <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
-              ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
-              ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
-            </div>
-          </div>
-        `).join('')}
+        ${groups[date].map(renderCard).join('')}
       </div>
     `).join('')
   } else {
-    resultsEl.innerHTML = list.map(link => `
-      <div class="card" id="game-${esc(link.url)}">
-        <div class="card-title">${esc(link.title)}</div>
-        <div class="card-meta">
-          ${link.filesize ? `<span class="badge badge-green">${esc(link.filesize)}</span>` : ''}
-          ${link.updated ? '<span class="badge badge-orange">Updated</span>' : ''}
-        </div>
-        <div class="card-links">
-          <a href="${esc(link.url)}" target="_blank" class="link-source">Source ↗</a>
-          ${link.rapidgator ? `<a href="${esc(link.rapidgator)}" target="_blank" class="link-target">Download ↗</a>` : ''}
-          ${link.youtube ? `<a href="${esc(link.youtube)}" target="_blank" class="link-trailer">Trailer ↗</a>` : ''}
-        </div>
-      </div>
-    `).join('')
+    resultsEl.innerHTML = list.map(renderCard).join('')
   }
 }
 
@@ -216,14 +215,15 @@ async function renderTrending() {
       c.height = img.naturalHeight
       c.getContext('2d').drawImage(img, 0, 0)
       c.toBlob(b => { if (b) img.src = URL.createObjectURL(b) }, 'image/webp', 0.8)
-    } catch {}
+    } catch (e) { console.debug('WebP conversion skipped:', e.message) }
   }))
 }
 
-searchEl.addEventListener('input', render)
+searchEl.addEventListener('input', debounce(render, 150))
 
 async function setData(links, fetched, trending) {
   allLinks = links
+  for (const l of allLinks) l._parsedSize = parseSize(l.filesize)
   if (trending) trendingData = trending
   sortMode = 'date'
   document.querySelector('.sort-btn[data-sort="date"]')?.classList.add('active')
@@ -246,13 +246,13 @@ async function main() {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (raw) {
-      const { data, timestamp, trending } = JSON.parse(raw)
-      if (Date.now() - timestamp < CACHE_TTL && data) {
-        await setData(data.links || data, data.fetched || timestamp, data.trending)
+      const { links, timestamp, trending, fetched } = JSON.parse(raw)
+      if (Date.now() - (timestamp || fetched) < CACHE_TTL && links) {
+        await setData(links, fetched || timestamp, trending)
         return
       }
     }
-  } catch {}
+  } catch (e) { console.warn('localStorage cache failed:', e.message) }
 
   statusEl.textContent = 'No data'
   resultsEl.innerHTML = '<div class="empty">No game data available.</div>'
@@ -269,10 +269,10 @@ async function tryLoadDataJS() {
     })
     if (typeof GAME_DATA !== 'undefined' && GAME_DATA?.links?.length) {
       await setData(GAME_DATA.links, GAME_DATA.fetched, GAME_DATA.trending)
-      localStorage.setItem(CACHE_KEY, JSON.stringify({ data: GAME_DATA.links, trending: GAME_DATA.trending, timestamp: GAME_DATA.fetched || Date.now() }))
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ links: GAME_DATA.links, trending: GAME_DATA.trending, fetched: GAME_DATA.fetched || Date.now() }))
       return true
     }
-  } catch {}
+  } catch (e) { console.warn('data.js load failed:', e.message) }
   return false
 }
 

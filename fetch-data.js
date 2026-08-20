@@ -109,7 +109,7 @@ async function crawlTrending(html) {
       if (tm) title = tm[1].replace(/\s*-\s*ElAmigos official site\s*/i, '').trim();
       const img = body.match(/<img\s+src="(https?:\/\/[^"]+)"[^>]*>/i);
       if (img) cover = img[1];
-    } catch {}
+    } catch (e) { console.warn('Trending crawl failed for', url, e.message); }
     if (!title) title = decodeURIComponent(url.split('/').pop().replace(/\.html$/i, '').replace(/_/g, ' ')).replace(/ MULTi\d+.*/, '').trim();
     results.push({ url, title, cover });
     await new Promise(r => setTimeout(r, 200));
@@ -125,7 +125,7 @@ async function main() {
     if (existing.links) {
       for (const l of existing.links) cache[l.url] = l;
     }
-  } catch {}
+  } catch (e) { console.warn('Cache read failed:', e.message); }
 
   console.log('Fetching main page...');
   const { body } = await fetchUrl(TARGET);

@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -17,10 +17,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
       - run: node fetch-data.js
       - run: node -e "const d=require('./data.json'); require('fs').writeFileSync('data.js','GAME_DATA='+JSON.stringify(d))"
-      - run: npx terser data.js -o data.js --compress --mangle --toplevel 2>/dev/null
-      - run: cp index.src.html index.html && sed -i "s/__DATA_VERSION__/$(date +%s)/g" index.html && npx staticrypt index.html -p "1337" --short -t password_template.html -d encrypted 2>/dev/null && cp encrypted/index.html . && rm -rf encrypted
+      - run: npx terser@5 data.js -o data.js --compress --mangle --toplevel
+      - run: cp index.src.html index.html && sed -i "s/__DATA_VERSION__/$(date +%s)/g" index.html && npx staticrypt@1 index.html -p "${{ secrets.STATYCRYPT_PASSWORD }}" --short -t password_template.html -d encrypted && cp encrypted/index.html . && rm -rf encrypted
       - run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
