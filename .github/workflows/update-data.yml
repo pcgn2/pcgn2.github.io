@@ -17,7 +17,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
       - run: node fetch-data.js
       - run: node -e "const d=require('./data.json'); require('fs').writeFileSync('data.js','GAME_DATA='+JSON.stringify(d))"
       - run: npx terser@5 data.js -o data.js --compress --mangle --toplevel
