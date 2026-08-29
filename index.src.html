@@ -194,7 +194,7 @@ function render() {
 function coverUrl(u) {
   if (!u) return ''
   if (u.includes('postimg.cc'))
-    return `https://i0.wp.com/${encodeURIComponent(u.replace(/^https?:\/\//,''))}?w=300&quality=60&resize=300,450&ssl=1`
+    return `https://i0.wp.com/${encodeURIComponent(u.replace(/^https?:\/\//,''))}?resize=300,450&quality=60&ssl=1`
   return u
 }
 
