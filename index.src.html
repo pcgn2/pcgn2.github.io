@@ -191,6 +191,13 @@ function render() {
   }
 }
 
+function coverUrl(u) {
+  if (!u) return ''
+  if (u.includes('postimg.cc'))
+    return `https://i0.wp.com/${encodeURIComponent(u.replace(/^https?:\/\//,''))}?w=300&quality=60&resize=300,450&ssl=1`
+  return u
+}
+
 async function renderTrending() {
   const list = trendingData.slice(0, TRENDING_COUNT)
   trendingEl.innerHTML = `
@@ -199,7 +206,7 @@ async function renderTrending() {
       <div class="trending-scroll">
         ${list.map(link => `
           <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
-            <img src="${esc(link.cover || '')}" alt="" loading="lazy">
+            <img src="${esc(coverUrl(link.cover))}" alt="" loading="lazy">
           </div>
         `).join('')}
       </div>
