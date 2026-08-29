@@ -199,24 +199,28 @@ async function renderTrending() {
       <div class="trending-scroll">
         ${list.map(link => `
           <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
-            <img data-src="${esc(link.cover || '')}" alt="" loading="lazy">
+            <img data-src="${esc(link.cover || '')}" alt="" loading="lazy" crossorigin="anonymous">
           </div>
         `).join('')}
       </div>
     </div>
   `
   const imgs = trendingEl.querySelectorAll('img[data-src]')
-  await Promise.all([...imgs].map(async img => {
+  await Promise.all([...imgs].map(img => new Promise(resolve => {
     const src = img.dataset.src
     img.src = src
-    try {
-      const c = document.createElement('canvas')
-      c.width = img.naturalWidth
-      c.height = img.naturalHeight
-      c.getContext('2d').drawImage(img, 0, 0)
-      c.toBlob(b => { if (b) img.src = URL.createObjectURL(b) }, 'image/webp', 0.8)
-    } catch (e) { console.debug('WebP conversion skipped:', e.message) }
-  }))
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas')
+        c.width = img.naturalWidth
+        c.height = img.naturalHeight
+        c.getContext('2d').drawImage(img, 0, 0)
+        c.toBlob(b => { if (b && c.width) img.src = URL.createObjectURL(b) }, 'image/webp', 0.8)
+      } catch (e) { console.debug('WebP conversion skipped:', e.message) }
+      resolve()
+    }
+    img.onerror = resolve
+  })))
 }
 
 searchEl.addEventListener('input', debounce(render, 150))
