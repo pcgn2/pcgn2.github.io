@@ -208,18 +208,26 @@ async function renderTrending() {
   const imgs = trendingEl.querySelectorAll('img[data-src]')
   await Promise.all([...imgs].map(img => new Promise(resolve => {
     const src = img.dataset.src
-    img.src = src
-    img.onload = () => {
+    const once = () => {
+      img.onload = null
       try {
         const c = document.createElement('canvas')
         c.width = img.naturalWidth
         c.height = img.naturalHeight
+        if (!c.width) return resolve()
         c.getContext('2d').drawImage(img, 0, 0)
-        c.toBlob(b => { if (b && c.width) img.src = URL.createObjectURL(b) }, 'image/webp', 0.8)
+        c.toBlob(b => {
+          if (b && c.width) {
+            img.onload = null
+            img.src = URL.createObjectURL(b)
+          }
+        }, 'image/webp', 0.8)
       } catch (e) { console.debug('WebP conversion skipped:', e.message) }
       resolve()
     }
-    img.onerror = resolve
+    img.onload = once
+    img.onerror = () => resolve()
+    img.src = src
   })))
 }
 
