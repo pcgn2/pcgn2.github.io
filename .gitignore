@@ -1,3 +1,5 @@
 pcgames_v4
 .DS_Store
 .github copy/
+node_modules/
+package-lock.json
