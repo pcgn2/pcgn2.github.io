@@ -206,7 +206,7 @@ async function renderTrending() {
       <div class="trending-scroll">
         ${list.map(link => `
           <div class="trend-card" onclick="document.getElementById('game-${esc(link.url)}').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('game-${esc(link.url)}').style.borderColor='var(--accent)';setTimeout(()=>document.getElementById('game-${esc(link.url)}').style.borderColor='',2000)">
-            <img src="${esc(coverUrl(link.cover))}" alt="" loading="lazy">
+            <img src="${esc(coverUrl(link.cover))}" data-fallback="${esc(link.cover)}" referrerpolicy="no-referrer" alt="" loading="lazy" onerror="this.onerror=null;this.src=this.dataset.fallback">
           </div>
         `).join('')}
       </div>
